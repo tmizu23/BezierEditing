@@ -1,0 +1,29 @@
+; the next section is mandatory
+[general]
+name=Bezier Editing
+qgisMinimumVersion=3.0
+description=BezierCurve editing
+category=Vector
+version=version 1.0.0
+author=Takayuki Mizutani
+email=mizutani@ecoris.co.jp
+; end of mandatory metadata
+
+; start of optional metadata
+changelog=
+    Version 1.0.0
+    - First Release
+
+; tags are in comma separated value format, spaces are allowed
+tags=digitizing,vector,bezier
+
+homepage=https://github.com/tmizu23/BezierEditing
+tracker=https://github.com/tmizu23/BezierEditing/issues
+repository=https://github.com/tmizu23/BezierEditing
+icon=BezierEditing.png
+
+; experimental flag
+experimental=False
+
+; deprecated flag (applies to the whole plugin and not only to the uploaded version)
+deprecated=False
