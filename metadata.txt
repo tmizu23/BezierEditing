@@ -3,6 +3,7 @@
 name=Bezier Editing
 qgisMinimumVersion=3.0
 description=BezierCurve editing
+about=This plugin edits the features using Bezier curves. You can create Bezier curve by plotting anchors and handles. And you can also draw Bezier curve by freehand.
 category=Vector
 version=version 1.0.0
 author=Takayuki Mizutani
