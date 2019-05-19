@@ -562,10 +562,11 @@ class BezierEditingTool(QgsMapTool):
         """
         undo bezier editing (add, move, delete , draw) for anchor and handle
         """
-        history_length = self.bg.undo()
-        self.bm.show(self.show_handle)
-        if history_length == 0:
-            self.resetEditing()
+        if self.bg is not None:
+            history_length = self.bg.undo()
+            self.bm.show(self.show_handle)
+            if history_length == 0:
+                self.resetEditing()
 
     def showHandle(self, checked):
         """
