@@ -88,10 +88,13 @@ class BezierEditingTool(QgsMapTool):
     def keyPressEvent(self, event):
         if self.mode == "bezier":
             if event.key() == Qt.Key_Alt:
+                self.log("alt")
                 self.alt = True
             if event.key() == Qt.Key_Control:
+                self.log("ctrl")
                 self.ctrl = True
             if event.key() == Qt.Key_Shift:
+                self.log("shift")
                 self.shift = True
 
     def keyReleaseEvent(self, event):
@@ -232,7 +235,7 @@ class BezierEditingTool(QgsMapTool):
             # left click
             elif event.button() == Qt.LeftButton:
                 # if click on bezier line, split bezier feature is created
-                if self.editing and self.editing_feature_id:
+                if self.editing and self.editing_feature_id is not None:
                     type = layer.geometryType()
                     if type == QgsWkbTypes.LineGeometry:
                         # split on anchor

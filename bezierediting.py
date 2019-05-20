@@ -76,7 +76,7 @@ class BezierEditing(object):
         self.toolbar.addAction(self.unsplit)
 
         # Create show anchor option
-        self.show_handle = QAction(QIcon(":/plugins/BezierEditing/icon/showhandleicon.svg"), "Bezier_Show_Anchor",
+        self.show_handle = QAction(QIcon(":/plugins/BezierEditing/icon/showhandleicon.svg"), "Bezier_Show_Handle",
                                    self.iface.mainWindow())
         self.show_handle.setObjectName("BezierEditing_show_handle")
         self.show_handle.setCheckable(True)
