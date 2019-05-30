@@ -805,6 +805,9 @@ class BezierEditingTool(QgsMapTool):
         self.checkCRS()
         self.snap_mark.hide()
         self.resetUnsplit()
+        self.alt = False
+        self.ctrl = False
+        self.shift = False
 
     def deactivate(self):
         pass
