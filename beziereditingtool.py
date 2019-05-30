@@ -620,6 +620,9 @@ class BezierEditingTool(QgsMapTool):
             if snapMatch.hasVertex():
                 snap_point = snapMatch.point()
                 snapped = True
+            elif snapMatch.hasEdge():
+                snap_point = snapMatch.point()
+                snapped = True
         return snapped, snap_point
 
     def getFeatureById(self, layer, featid):
@@ -650,6 +653,7 @@ class BezierEditingTool(QgsMapTool):
         snap_cfg = self.iface.mapCanvas().snappingUtils().config()
         if snap_cfg.enabled():
             self.snapping = True
+
         else:
             self.snapping = False
 
