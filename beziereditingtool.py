@@ -118,7 +118,7 @@ class BezierEditingTool(QgsMapTool):
             if event.button() == Qt.RightButton:
                 if self.editing:
                     # if right click on first anchor in editing, flip bezier line
-                    if snapped[4]:
+                    if snapped[4] and self.bg.anchorCount() > 1:
                         self.bg.flip_line()
                         self.bm.show(self.show_handle)
                     # if right click in editing, bezier editing finish
