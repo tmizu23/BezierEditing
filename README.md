@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.0.0
+ BezierEditing plugin - version 1.1.0
 ===================================
 This is a [QGIS](https://qgis.org/) plugin which edits features with Bezier curves.
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)

@@ -20,6 +20,7 @@ from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtWidgets import *
 from qgis.core import *
 from qgis.gui import *
+import webbrowser
 
 from . import resources
 from .beziereditingtool import BezierEditingTool
@@ -33,6 +34,14 @@ class BezierEditing(object):
         self.active = False
 
     def initGui(self):
+        # create menu for this plugin
+        self.action = QAction(
+            QIcon(":/plugins/BezierEditing/icon/beziericon.svg"),
+            u"Online Document", self.iface.mainWindow())
+        # connect the action to the run method
+        self.action.triggered.connect(self.open_browser)
+        self.iface.addPluginToMenu(u"&Bezier Editing", self.action)
+
         # create toolbar for this plugin
         self.toolbar = self.iface.addToolBar("BezierEditing")
 
@@ -93,24 +102,33 @@ class BezierEditing(object):
 
         # Connect to signals for button behaviour
         self.iface.layerTreeView().currentLayerChanged.connect(self.toggle)
-        self.canvas.mapToolSet.connect(self.deactivate)
+        self.canvas.mapToolSet.connect(self.maptoolChanged)
+
+        self.currentTool = None
+
+    def open_browser(self):
+        webbrowser.open('https://github.com/tmizu23/BezierEditing/wiki')
 
     def bezierediting(self):
+        self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
         self.bezier_edit.setChecked(True)
         self.beziertool.mode = "bezier"
 
     def freehandediting(self):
+        self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
         self.freehand.setChecked(True)
         self.beziertool.mode = "freehand"
 
     def spliting(self):
+        self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
         self.split.setChecked(True)
         self.beziertool.mode = "split"
 
     def unspliting(self):
+        self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
         self.unsplit.setChecked(True)
         self.beziertool.mode = "unsplit"
@@ -160,11 +178,15 @@ class BezierEditing(object):
                 except TypeError:
                     pass
 
-    def deactivate(self):
+    def maptoolChanged(self):
         self.bezier_edit.setChecked(False)
         self.freehand.setChecked(False)
         self.split.setChecked(False)
         self.unsplit.setChecked(False)
+        if self.iface.mapCanvas().mapTool() != self.currentTool:
+            self.iface.mapCanvas().unsetMapTool(self.currentTool)
+            self.currentTool = None
+
 
     def unload(self):
         self.toolbar.removeAction(self.bezier_edit)
@@ -174,3 +196,7 @@ class BezierEditing(object):
         self.toolbar.removeAction(self.show_handle)
         self.toolbar.removeAction(self.undo)
         del self.toolbar
+        self.iface.mapCanvas().mapToolSet.disconnect(self.maptoolChanged)
+
+    def log(self, msg):
+        QgsMessageLog.logMessage(msg, 'MyPlugin', Qgis.Info)
