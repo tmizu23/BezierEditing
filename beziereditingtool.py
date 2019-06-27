@@ -148,6 +148,7 @@ class BezierEditingTool(QgsMapTool):
                     if snapped[1]:
                         self.bg.delete_anchor(snap_idx[1], snap_point[1])
                         self.bm.delete_anchor(snap_idx[1])
+                        self.guideAnchorIdxs = []
                     # if click on handle with shift, move handle to anchor
                     elif snapped[2]:
                         self.bg.delete_handle(snap_idx[2], snap_point[2])
