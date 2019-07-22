@@ -409,7 +409,7 @@ class BezierEditingTool(QgsMapTool):
         # the layer geometry type is different
         elif result is False:
             reply = QMessageBox.question(None, "Question", self.tr(
-                u"The layer geometry type is different. Do you want to continue editing?"), QMessageBox.Yes,
+                u"The layer geometry type is different. Or polygon isn't close. Do you want to continue editing?"), QMessageBox.Yes,
                                          QMessageBox.No)
             if reply == QMessageBox.Yes:
                 continueFlag = True
