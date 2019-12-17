@@ -51,6 +51,7 @@ class BezierEditingTool(QgsMapTool):
         self.snap_mark.setPenWidth(2)
         self.snap_mark.setIconType(QgsVertexMarker.ICON_BOX)
         self.snap_mark.setIconSize(10)
+        self.snap_mark.hide()
         # snap guide line
         self.guide_rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.guide_rbl.setColor(QColor(0, 0, 255, 150))
