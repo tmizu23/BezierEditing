@@ -479,24 +479,57 @@ class BezierEditingTool(QgsMapTool):
         elif geom.type() == QgsWkbTypes.LineGeometry:
             geom.convertToSingleType()
             polyline = geom.asPolyline()
-            self.bg = BezierGeometry.convertLineToBezier(polyline)
-            if self.bg is not None:
+            is_bezier = BezierGeometry.checkIsBezier(polyline)
+            if is_bezier:
+                self.bg = BezierGeometry.convertLineToBezier(polyline)
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
                 ok = True
             else:
-                QMessageBox.warning(None, "Warning", self.tr(u"The feature can't convert to bezier."))
+                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
+                                             QMessageBox.Yes,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    linetype_reply = QMessageBox.question(None, "Question", self.tr(
+                        u"How to convert? Yes--> by Line, No--> by fitting Curve"),
+                                                 QMessageBox.Yes,
+                                                 QMessageBox.No)
+                    if linetype_reply == QMessageBox.Yes:
+                        linetype="line"
+                    else:
+                        linetype = "curve"
+                    self.bg = BezierGeometry.convertLineToBezier(polyline, linetype)
+                    self.bm = BezierMarker(self.canvas, self.bg)
+                    self.bm.show(self.show_handle)
+                    ok = True
 
         elif geom.type() == QgsWkbTypes.PolygonGeometry:
             geom.convertToSingleType()
             polygon = geom.asPolygon()
-            self.bg = BezierGeometry.convertPolygonToBezier(polygon)
-            if self.bg is not None:
+            is_bezier = BezierGeometry.checkIsBezier(polygon[0])
+            if is_bezier:
+                self.bg = BezierGeometry.convertLineToBezier(polygon[0])
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
                 ok = True
             else:
-                QMessageBox.warning(None, "Warning", self.tr(u"The feature can't convert to bezier."))
+                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
+                                             QMessageBox.Yes,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    linetype_reply = QMessageBox.question(None, "Question", self.tr(
+                        u"How to convert? Yes--> by Line, No-->by fitting Curve"),
+                                                          QMessageBox.Yes,
+                                                          QMessageBox.No)
+                    if linetype_reply == QMessageBox.Yes:
+                        linetype = "line"
+                    else:
+                        linetype = "curve"
+                    self.bg = BezierGeometry.convertLineToBezier(polygon[0], linetype)
+                    self.bm = BezierMarker(self.canvas, self.bg)
+                    self.bm.show(self.show_handle)
+                    ok = True
+
         else:
             QMessageBox.warning(None, "Warning", self.tr(u"The layer geometry type doesn't support."))
 

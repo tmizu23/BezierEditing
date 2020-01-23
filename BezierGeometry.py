@@ -38,42 +38,38 @@ class BezierGeometry:
         return bg
 
     @classmethod
-    def convertLineToBezier(cls, polyline):
+    def checkIsBezier(cls, polyline):
+        is_bezier = True
         bg = cls()
-        # if polyline length isn't match cause of edited other tool, it can't convert to bezier line
+        # if polyline length isn't match cause of edited other tool, points are interpolated.
         if len(polyline) % bg.INTERPOLATION != 1:
-            return None
-        point_list = bg._pointList(polyline)
-        for i, points_i in enumerate(point_list):
-            ps, cs, pe, ce = bg._convertPointListToAnchorAndHandle(points_i)
-            p0 = QgsPointXY(ps[0], ps[1])
-            p1 = QgsPointXY(pe[0], pe[1])
-            c0 = QgsPointXY(ps[0], ps[1])
-            c1 = QgsPointXY(cs[0], cs[1])
-            c2 = QgsPointXY(ce[0], ce[1])
-            c3 = QgsPointXY(pe[0], pe[1])
-            if i == 0:
-                bg._addAnchor(-1, p0)
-                bg._moveHandle(i * 2, c0)
-                bg._moveHandle(i * 2 + 1, c1)
-                bg._addAnchor(-1, p1)
-                bg._moveHandle((i + 1) * 2, c2)
-                bg._moveHandle((i + 1) * 2 + 1, c3)
-            else:
-                bg._moveHandle(i * 2 + 1, c1)
-                bg._addAnchor(-1, p1)
-                bg._moveHandle((i + 1) * 2, c2)
-                bg._moveHandle((i + 1) * 2 + 1, c3)
+            is_bezier = False
+        else:
+            point_list = bg._lineToPointList(polyline)
+            # Check if the number of points accidentally matches with the case of Bezier
+            # if not bezier, calculation of anchor position is different from "A" and "B"
+            for points in point_list:
+                psA, csA, peA, ceA = bg._convertPointListToAnchorAndHandle(points, "A")
+                psB, csB, peB, ceB = bg._convertPointListToAnchorAndHandle(points, "B")
 
-        return bg
+                if not(abs(csA[0] - csB[0]) < 0.0001 and abs(csA[1] - csB[1]) < 0.0001 and abs(ceA[0] - ceB[0]) < 0.0001 and abs(ceA[1] - ceB[1]) < 0.0001):
+                    is_bezier = False
+
+        return is_bezier
 
     @classmethod
-    def convertPolygonToBezier(cls, polygon):
+    def convertLineToBezier(cls, polyline, linetype="bezier"): #bezier,line,curve
         bg = cls()
-        # if polygon length isn't match cause of edited other tool, it can't convert to bezier line
-        if len(polygon) % bg.INTERPOLATION != 1:
-            return None
-        bg = bg.convertLineToBezier(polygon[0])
+        if linetype == "bezier":
+            point_list = bg._lineToPointList(polyline)
+            bg._invertBezierPointListToBezier(point_list)
+        elif linetype == "line":
+            point_list = bg._lineToInterpolatePointList(polyline)
+            bg._invertBezierPointListToBezier(point_list)
+        elif linetype == "curve":
+            geom = QgsGeometry.fromPolylineXY(polyline)
+            bg._addGeometryToBezier(geom, 0, last=True)
+
         return bg
 
     def asGeometry(self, layer_type, layer_wkbtype):
@@ -96,6 +92,11 @@ class BezierGeometry:
                 result = True
         elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] == self.points[-1]:
             geom = QgsGeometry.fromPolygonXY([self.points])
+            result = True
+        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] != self.points[-1]:
+            # if first point and last point is different, interpolate points.
+            point_list = self._lineToInterpolatePointList([self.points[-1],self.points[0]])
+            geom = QgsGeometry.fromPolygonXY([self.points + point_list[0][1:-1]])
             result = True
         elif layer_type == QgsWkbTypes.LineGeometry and num_anchor < 2:
             result = None
@@ -176,7 +177,7 @@ class BezierGeometry:
 
     def modified_by_geometry(self, update_geom, d, snap_to_start):
         """
-        update bezier line by geometry
+        update bezier line by geometry. if no bezier line, added new.
         """
         bezier_line = self.points
         update_line = update_geom.asPolyline()
@@ -232,7 +233,7 @@ class BezierGeometry:
                 lastpnt_is_near, last_anchoridx, last_vertexidx = self._closestAnchorOfGeometry(lastpnt, reversed_geom,
                                                                                                 d)
 
-            point_list = self._pointList(bezier_line)
+            point_list = self._lineToPointList(bezier_line)
 
             # modify of middle of bezier line.
             if lastpnt_is_near and last_vertexidx > start_vertexidx and last_anchoridx <= len(point_list):
@@ -652,6 +653,31 @@ class BezierGeometry:
             points.append(QgsPointXY(bx, by))
         return points
 
+    def _invertBezierPointListToBezier(self, point_list):
+        """
+        invert from the Bezier pointList to anchor and handle coordinate
+        """
+        for i, points_i in enumerate(point_list):
+            ps, cs, pe, ce = self._convertPointListToAnchorAndHandle(points_i)
+            p0 = QgsPointXY(ps[0], ps[1])
+            p1 = QgsPointXY(pe[0], pe[1])
+            c0 = QgsPointXY(ps[0], ps[1])
+            c1 = QgsPointXY(cs[0], cs[1])
+            c2 = QgsPointXY(ce[0], ce[1])
+            c3 = QgsPointXY(pe[0], pe[1])
+            if i == 0:
+                self._addAnchor(-1, p0)
+                self._moveHandle(i * 2, c0)
+                self._moveHandle(i * 2 + 1, c1)
+                self._addAnchor(-1, p1)
+                self._moveHandle((i + 1) * 2, c2)
+                self._moveHandle((i + 1) * 2 + 1, c3)
+            else:
+                self._moveHandle(i * 2 + 1, c1)
+                self._addAnchor(-1, p1)
+                self._moveHandle((i + 1) * 2, c2)
+                self._moveHandle((i + 1) * 2 + 1, c3)
+
     def _convertPointListToAnchorAndHandle(self, points, type="A"):
         """
         convert to anchor and handle coordinate from the element of pointList
@@ -690,7 +716,11 @@ class BezierGeometry:
         self.handle.reverse()
         self.points.reverse()
 
-    def _pointList(self, polyline):
+    def _lineToInterpolatePointList(self,polyline):
+
+        return [self._bezier(polyline[i], polyline[i], polyline[i+1], polyline[i+1]) for i in range(0, len(polyline)-1)]
+
+    def _lineToPointList(self, polyline):
         """
         convert to pointList from polyline. pointList is points list between anchor to anchor
         The number of elements in pointList is INTERPOLATION + 1 because each anchor overlaps.
