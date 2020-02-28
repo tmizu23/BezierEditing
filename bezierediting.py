@@ -196,6 +196,7 @@ class BezierEditing(object):
         self.toolbar.removeAction(self.show_handle)
         self.toolbar.removeAction(self.undo)
         del self.toolbar
+        self.iface.removePluginMenu(u"&Bezier Editing", self.action)
         self.iface.mapCanvas().mapToolSet.disconnect(self.maptoolChanged)
 
     def log(self, msg):
