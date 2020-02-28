@@ -443,8 +443,8 @@ class BezierEditingTool(QgsMapTool):
         convert drawing line to bezier line
         """
         geom = self.freehand_rbl.asGeometry()
-        d = self.canvas.mapUnitsPerPixel() * 10
-        self.bg.modified_by_geometry(geom, d, snap_to_start)
+        scale = self.canvas.scale()
+        self.bg.modified_by_geometry(geom, scale, snap_to_start)
         self.bm.show()
         self.freehand_rbl.reset()
 
@@ -641,12 +641,12 @@ class BezierEditingTool(QgsMapTool):
 
         if self.bg is not None:
             point = snap_point[0]
-            d = self.canvas.mapUnitsPerPixel() * 4
-            snapped[1], snap_point[1], snap_idx[1] = self.bg.checkSnapToAnchor(point, self.clicked_idx, d)
+            snap_distance = self.canvas.scale() / 500
+            snapped[1], snap_point[1], snap_idx[1] = self.bg.checkSnapToAnchor(point, self.clicked_idx, snap_distance)
             if self.show_handle and self.mode == "bezier":
-                snapped[2], snap_point[2], snap_idx[2] = self.bg.checkSnapToHandle(point, d)
-            snapped[3], snap_point[3], snap_idx[3] = self.bg.checkSnapToLine(point, d)
-            snapped[4], snap_point[4], snap_idx[4] = self.bg.checkSnapToStart(point, d)
+                snapped[2], snap_point[2], snap_idx[2] = self.bg.checkSnapToHandle(point, snap_distance)
+            snapped[3], snap_point[3], snap_idx[3] = self.bg.checkSnapToLine(point, snap_distance)
+            snapped[4], snap_point[4], snap_idx[4] = self.bg.checkSnapToStart(point, snap_distance)
 
             if self.smartGuideOn and self.mode == "bezier":
                 doSnapIdx = 0
@@ -827,8 +827,8 @@ class BezierEditingTool(QgsMapTool):
 
     def getNearFeatures(self, layer, point, rect=None):
         if rect is None:
-            d = self.canvas.mapUnitsPerPixel() * 4
-            rect = QgsRectangle((point.x() - d), (point.y() - d), (point.x() + d), (point.y() + d))
+            dist = self.canvas.scale() / 500
+            rect = QgsRectangle((point.x() - dist), (point.y() - dist), (point.x() + dist), (point.y() + dist))
         self.checkCRS()
         if self.layerCRS.srsid() != self.projectCRS.srsid():
             rectGeom = QgsGeometry.fromRect(rect)

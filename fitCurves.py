@@ -7,7 +7,7 @@
 from __future__ import print_function
 from numpy import *
 from . import bezier
-
+from qgis.core import *
 
 # Fit one (ore more) Bezier curves to a set of points
 def fitCurve(points, maxError):
@@ -32,15 +32,16 @@ def fitCubic(points, leftTangent, rightTangent, error):
     if maxError < error:
         return [bezCurve]
 
-    # If error not too large, try some reparameterization and iteration
-    if maxError < error**2:
-        for i in range(200):
-            uPrime = reparameterize(bezCurve, points, u)
-            bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent)
-            maxError, splitPoint = computeMaxError(points, bezCurve, uPrime)
-            if maxError < error:
-                return [bezCurve]
-            u = uPrime
+    # # If error not too large, try some reparameterization and iteration
+    # if maxError < error**2:
+    #     for i in range(200):
+    #         uPrime = reparameterize(bezCurve, points, u)
+    #         bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent)
+    #         maxError, splitPoint = computeMaxError(points, bezCurve, uPrime)
+    #         if maxError < error:
+    #             mylog("C{}".format(i))
+    #             return [bezCurve]
+    #         u = uPrime
 
     # # Fitting failed -- split at max error point and fit recursively
     beziers = []
@@ -159,5 +160,9 @@ def computeMaxError(points, bez, parameters):
 
 
 def normalize(v):
+    if allclose(v, array([0, 0])):
+        v = array([0.00001, 0.00001])
     return v / linalg.norm(v)
 
+def mylog(msg):
+    QgsMessageLog.logMessage(msg, 'MyPlugin', Qgis.Info)
