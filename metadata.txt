@@ -5,14 +5,15 @@ qgisMinimumVersion=3.0
 description=BezierCurve editing
 about=This plugin edits the features using Bezier curves. You can create Bezier curve by plotting anchors and handles. And you can also draw Bezier curve by freehand.
 category=Vector
-version=version 1.2.0
+version=version 1.2.1
 author=Takayuki Mizutani
 email=mizutani@ecoris.co.jp
 ; end of mandatory metadata
 
 ; start of optional metadata
 changelog=
-    Version 1.2.0
+    Version 1.2.1
+    - support editing closed polygon.
     - support converting to Bezier of features created by QGIS editing tools.
     - fixed not to display blue marker when activated.
 
