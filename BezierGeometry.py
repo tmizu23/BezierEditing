@@ -122,6 +122,11 @@ class BezierGeometry:
             self.history.append({"state": "move_anchor", "pointidx": idx, "point": point})
         self._moveAnchor(idx, point)
 
+    def move_anchor2(self, idx, point):
+        self.history.append({"state": "move_anchor2", "pointidx": idx, "point": point})
+        self._moveAnchor(idx, point)
+        self._moveAnchor(0, point)
+
     def delete_anchor(self, idx, point, undo=True):
         if undo:
             self.history.append(
@@ -133,6 +138,20 @@ class BezierGeometry:
                  }
             )
         self._deleteAnchor(idx)
+
+    def delete_anchor2(self, idx, point):
+
+        self.history.append(
+            {"state": "delete_anchor2",
+             "pointidx": idx,
+             "point": point,
+             "ctrlpoint0": self.getHandle(1),
+             "ctrlpoint1": self.getHandle(idx * 2)
+             }
+        )
+        self._deleteAnchor(idx)
+        self._deleteAnchor(0)
+        self._addAnchor(self.anchorCount(), self.getAnchor(0))
 
     def move_handle(self, idx, point, undo=True):
         if undo:
@@ -175,7 +194,7 @@ class BezierGeometry:
         )
         self._insertAnchorPointToBezier(point_idx, anchor_idx, point)
 
-    def modified_by_geometry(self, update_geom, scale, snap_to_start):
+    def modified_by_geometry(self, update_geom, layer_type, scale, snap_to_start):
         """
         update bezier line by geometry. if no bezier line, added new.
         """
@@ -236,7 +255,7 @@ class BezierGeometry:
 
             point_list = self._lineToPointList(bezier_line)
 
-            # modify of middle of bezier line.
+            # modify middle of bezier line.
             if lastpnt_is_near and last_vertexidx > start_vertexidx and last_anchoridx <= len(point_list):
 
                 polyline = point_list[start_anchoridx - 1][0:self._pointListIdx(start_vertexidx)] + \
@@ -259,8 +278,38 @@ class BezierGeometry:
                 self.history.append(
                     {"state": "insert_geom", "pointidx": start_anchoridx, "pointnum": pointnum, "cp_first": cp_first,
                      "cp_last": cp_last})
+            # modify polygon
+            elif layer_type == QgsWkbTypes.PolygonGeometry and lastpnt_is_near and last_vertexidx <= start_vertexidx:
+                polyline = point_list[start_anchoridx - 1][0:self._pointListIdx(start_vertexidx)] + update_line + \
+                           point_list[last_anchoridx - 1][self._pointListIdx(last_vertexidx):]
+                geom = self._smoothingGeometry(polyline)
+                for i in range(start_anchoridx, self.anchorCount()):
+                    self.history.append(
+                        {"state": "delete_anchor",
+                         "pointidx": start_anchoridx,
+                         "point": self.getAnchor(start_anchoridx),
+                         "ctrlpoint0": self.getHandle(start_anchoridx * 2),
+                         "ctrlpoint1": self.getHandle(start_anchoridx * 2 + 1)
+                         }
+                    )
+                    self._deleteAnchor(start_anchoridx)
 
-            # modify of end line, return to backward, end line is near of last anchor
+                pointnum, cp_first, cp_last = self._convertGeometryToBezier(geom, start_anchoridx, scale, last=True)
+                self.history.append(
+                    {"state": "insert_geom", "pointidx": start_anchoridx, "pointnum": pointnum, "cp_first": cp_first,
+                     "cp_last": cp_last})
+                for i in range(0, last_anchoridx):
+                    self.history.append(
+                        {"state": "delete_anchor",
+                         "pointidx": 0,
+                         "point": self.getAnchor(0),
+                         "ctrlpoint0": self.getHandle(0),
+                         "ctrlpoint1": self.getHandle(1)
+                         }
+                    )
+                    self._deleteAnchor(0)
+
+            # modify end line, return to backward, end line is near of last anchor
             elif not lastpnt_is_near or (lastpnt_is_near and last_vertexidx <= start_vertexidx) or last_anchoridx > len(
                     point_list):
 
@@ -356,6 +405,8 @@ class BezierGeometry:
         snap_point = None
         snap_idx = None
         for i, p in reversed(list(enumerate(self.handle))):
+            if i == 0 or i == len(self.handle)-1:
+                continue
             near = self._eachPointIsNear(p, point, d)
             if near:
                 snapped = True
@@ -400,6 +451,9 @@ class BezierGeometry:
                 self._deleteAnchor(act["pointidx"])
             elif act["state"] == "move_anchor":
                 self._moveAnchor(act["pointidx"], act["point"])
+            elif act["state"] == "move_anchor2":
+                self._moveAnchor(act["pointidx"], act["point"])
+                self._moveAnchor(0, act["point"])
             elif act["state"] == "move_handle":
                 self._moveHandle(act["pointidx"], act["point"])
             elif act["state"] == "insert_anchor":
@@ -410,6 +464,12 @@ class BezierGeometry:
                 self._addAnchor(act["pointidx"], act["point"])
                 self._moveHandle(act["pointidx"] * 2, act["ctrlpoint0"])
                 self._moveHandle(act["pointidx"] * 2 + 1, act["ctrlpoint1"])
+            elif act["state"] == "delete_anchor2":
+                self._deleteAnchor(self.anchorCount()-1)
+                self._addAnchor(0, act["point"])
+                self._moveHandle(1, act["ctrlpoint0"])
+                self._addAnchor(act["pointidx"], act["point"])
+                self._moveHandle(act["pointidx"] * 2, act["ctrlpoint1"])
             elif act["state"] == "delete_handle":
                 self._moveHandle(act["pointidx"], act["point"])
             elif act["state"] == "flip_line":
@@ -534,8 +594,11 @@ class BezierGeometry:
             pointsB = self._bezier(p1, c1, p2, c2)
 
         # first anchor
-        if idx == 0:
+        if idx == 0 and len(pointsA) == 0:
             self.points = copy.copy(self.anchor)
+        # the case of undo that of polygon's first anchor delete
+        elif idx == 0 and len(pointsA) > 0:
+            self.points = pointsA[0:-1] + self.points
         # second anchor
         elif idx == 1 and idx == self.anchorCount() - 1:
             self.points = pointsB
