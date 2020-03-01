@@ -79,6 +79,7 @@ class BezierEditingTool(QgsMapTool):
         self.snapping = None  # in snap setting or not
         self.show_handle = False  # show handle or not
         self.editing_feature_id = None  # bezier editing feature id
+        self.editing_geom_type = None # bezier editing geom type
         self.clicked_idx = None  # clicked anchor or handle idx
         self.bg = None  # BezierGeometry
         self.bm = None  # BezierMarker
@@ -147,9 +148,18 @@ class BezierEditingTool(QgsMapTool):
                 elif bool(modifiers & Qt.ShiftModifier):
                     # if click on anchor with shift, delete anchor from bezier line
                     if snapped[1]:
-                        self.bg.delete_anchor(snap_idx[1], snap_point[1])
-                        self.bm.delete_anchor(snap_idx[1])
-                        self.guideAnchorIdxs = []
+                        # polygon's first anchor
+                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and snap_idx[1] == self.bg.anchorCount()-1:
+                            self.bg.delete_anchor2(snap_idx[1], snap_point[1])
+                            self.bm.delete_anchor(snap_idx[1])
+                            self.bm.delete_anchor(0)
+                            self.bm.add_anchor(self.bg.anchorCount(), self.bg.getAnchor(0))
+                            self.guideAnchorIdxs = []
+                        else:
+                            self.bg.delete_anchor(snap_idx[1], snap_point[1])
+                            self.bm.delete_anchor(snap_idx[1])
+                            self.guideAnchorIdxs = []
+
                     # if click on handle with shift, move handle to anchor
                     elif snapped[2]:
                         self.bg.delete_handle(snap_idx[2], snap_point[2])
@@ -161,8 +171,13 @@ class BezierEditingTool(QgsMapTool):
                     if snapped[1]:
                         self.mouse_state = "move_anchor"
                         self.clicked_idx = snap_idx[1]
-                        self.bg.move_anchor(snap_idx[1], snap_point[1])
-                        self.bm.move_anchor(snap_idx[1], snap_point[1])
+                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and snap_idx[1] == (self.bg.anchorCount() - 1):
+                            self.bg.move_anchor2(snap_idx[1], snap_point[1])
+                            self.bm.move_anchor(snap_idx[1], snap_point[1])
+                            self.bm.move_anchor(0, snap_point[1])
+                        else:
+                            self.bg.move_anchor(snap_idx[1], snap_point[1])
+                            self.bm.move_anchor(snap_idx[1], snap_point[1])
 
                     # if click on handle, move handle
                     elif snapped[2]:
@@ -172,6 +187,8 @@ class BezierEditingTool(QgsMapTool):
                         self.bm.move_handle(snap_idx[2], snap_point[2])
                     # if click on canvas, add anchor
                     else:
+                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
+                            return
                         if not self.editing:
                             self.bg = BezierGeometry()
                             self.bm = BezierMarker(self.canvas, self.bg)
@@ -312,6 +329,9 @@ class BezierEditingTool(QgsMapTool):
                     point = snap_point[1]
                 self.bg.move_anchor(self.clicked_idx, point, undo=False)
                 self.bm.move_anchor(self.clicked_idx, point)
+                if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and self.clicked_idx == (self.bg.anchorCount() - 1):
+                    self.bg.move_anchor(0, point, undo=False)
+                    self.bm.move_anchor(0, point)
             # free moving
             else:
                 # on anchor
@@ -391,9 +411,10 @@ class BezierEditingTool(QgsMapTool):
             for selected_id in layer.selectedFeatureIds():
                 if selected_id in feat_ids:
                     edit_feature = feat[feat_ids.index(selected_id)]
-            ret = self.convertFeatureToBezier(edit_feature)
-            if ret:
+            geom_type = self.convertFeatureToBezier(edit_feature)
+            if geom_type is not None:
                 self.editing_feature_id = edit_feature.id()
+                self.editing_geom_type = geom_type
                 ok = True
         return ok
 
@@ -457,6 +478,7 @@ class BezierEditingTool(QgsMapTool):
         self.bg = None
         self.bm = None
         self.editing_feature_id = None
+        self.editing_geom_type = None
         self.editing = False
         self.guideAnchorIdxs = []
 
@@ -464,7 +486,7 @@ class BezierEditingTool(QgsMapTool):
         """
         convert feature to bezier line
         """
-        ok = False
+        geom_type = None
         geom = QgsGeometry(feature.geometry())
         self.checkCRS()
         if self.layerCRS.srsid() != self.projectCRS.srsid():
@@ -475,7 +497,7 @@ class BezierEditingTool(QgsMapTool):
             self.bg = BezierGeometry.convertPointToBezier(point)
             self.bm = BezierMarker(self.canvas, self.bg)
             self.bm.add_anchor(0, point)
-            ok = True
+            geom_type = geom.type()
         elif geom.type() == QgsWkbTypes.LineGeometry:
             geom.convertToSingleType()
             polyline = geom.asPolyline()
@@ -484,7 +506,7 @@ class BezierEditingTool(QgsMapTool):
                 self.bg = BezierGeometry.convertLineToBezier(polyline)
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
-                ok = True
+                geom_type = geom.type()
             else:
                 reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
                                              QMessageBox.Yes,
@@ -501,7 +523,7 @@ class BezierEditingTool(QgsMapTool):
                     self.bg = BezierGeometry.convertLineToBezier(polyline, linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
-                    ok = True
+                    geom_type = geom.type()
 
         elif geom.type() == QgsWkbTypes.PolygonGeometry:
             geom.convertToSingleType()
@@ -511,7 +533,7 @@ class BezierEditingTool(QgsMapTool):
                 self.bg = BezierGeometry.convertLineToBezier(polygon[0])
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
-                ok = True
+                geom_type = geom.type()
             else:
                 reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
                                              QMessageBox.Yes,
@@ -528,12 +550,12 @@ class BezierEditingTool(QgsMapTool):
                     self.bg = BezierGeometry.convertLineToBezier(polygon[0], linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
-                    ok = True
+                    geom_type = geom.type()
 
         else:
             QMessageBox.warning(None, "Warning", self.tr(u"The layer geometry type doesn't support."))
 
-        return ok
+        return geom_type
 
     def createFeature(self, geom, feature, editmode=True, showdlg=True):
         """

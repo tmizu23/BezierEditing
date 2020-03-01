@@ -159,7 +159,7 @@ class BezierMarker:
             self.canvas.scene().removeItem(m)
 
     def _showAllMarker(self, markers):
-        for m in markers:
+        for m in markers[1:-1]:
             m.show()
 
     def _hideAllMarker(self, markers):
@@ -176,7 +176,7 @@ class BezierMarker:
             self.canvas.scene().removeItem(rbl)
 
     def _showAllRubberBand(self, rbls):
-        for rbl in rbls:
+        for rbl in rbls[1:-1]:
             rbl.setColor(QColor(0, 0, 0, 255))
 
     def _hideAllRubberBand(self, rbls):
