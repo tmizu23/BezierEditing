@@ -84,11 +84,11 @@ class BezierGeometry:
             geom = QgsGeometry.fromPointXY(self.points[0])
             result = True
         elif layer_type == QgsWkbTypes.LineGeometry and num_anchor >= 2:
-            if layer_wkbtype == QgsWkbTypes.LineString:
-                geom = QgsGeometry.fromPolylineXY(self.points)
-                result = True
-            elif layer_wkbtype == QgsWkbTypes.MultiLineString:
+            if QgsWkbTypes.isMultiType(layer_wkbtype):
                 geom = QgsGeometry.fromMultiPolylineXY([self.points])
+                result = True
+            else:
+                geom = QgsGeometry.fromPolylineXY(self.points)
                 result = True
         elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 2 and self.points[0] == self.points[-1]:
             geom = QgsGeometry.fromPolygonXY([self.points])
