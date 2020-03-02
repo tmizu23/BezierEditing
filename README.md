@@ -3,12 +3,17 @@
 This is a [QGIS](https://qgis.org/) plugin which edits features with Bezier curves.
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
   
+Install
+-------------
 
+  You can install this plugin from QGIS menu --> plugin --> Manage and Install plugins... --> Bezier Editing
 
 Documentation
 -------------
 
-  See [plugin wiki page](https://github.com/tmizu23/BezierEditing/wiki).
+  [English Document](https://github.com/tmizu23/BezierEditing/wiki/Document-(English)).
+  
+  [Japanese Document](https://github.com/tmizu23/BezierEditing/wiki/%E3%83%89%E3%82%AD%E3%83%A5%E3%83%A1%E3%83%B3%E3%83%88%EF%BC%88Japanese%EF%BC%89).
 
 
 Dependent Python libraries and resources
