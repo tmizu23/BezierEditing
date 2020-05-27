@@ -20,6 +20,7 @@ Dependent Python libraries and resources
 --------------------------------------------
 
 * [fitCurves](https://github.com/volkerp/fitCurves) for fitting one or more cubic Bezier curves to a polyline.
+* https://github.com/tmizu23/cubic_bezier_curve/blob/master/cubic_bezier_curve.ipynb
 
 
 License
