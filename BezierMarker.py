@@ -51,16 +51,16 @@ class BezierMarker:
         show bezier curve and marker
         """
         self.reset()
-        for point in self.bg.anchor:
+        for point in self.bg.getAnchorList(revert=True):
             self._setAnchorHandleMarker(self.anchor_marks, len(self.anchor_marks), point)
             self._setAnchorHandleMarker(self.handle_marks, len(self.handle_marks), point, QColor(125, 125, 125))
             self._setAnchorHandleMarker(self.handle_marks, len(self.handle_marks), point, QColor(125, 125, 125))
             self._setHandleLine(self.handle_rbls, len(self.handle_marks), point)
             self._setHandleLine(self.handle_rbls, len(self.handle_marks), point)
-        for idx, point in enumerate(self.bg.handle):
+        for idx, point in enumerate(self.bg.getHandleList(revert=True)):
             self.handle_rbls[idx].movePoint(1, point, 0)
             self.handle_marks[idx].setCenter(point)
-        self._setBezierLine(self.bg.points, self.bezier_rbl)
+        self._setBezierLine(self.bg.getPointList(revert=True), self.bezier_rbl)
 
         if show_handle is not None:
             self.show_handle(show_handle)
@@ -74,7 +74,7 @@ class BezierMarker:
         self._setAnchorHandleMarker(self.handle_marks, 2 * idx, point, QColor(125, 125, 125))
         self._setHandleLine(self.handle_rbls, 2 * idx, point)
         self._setHandleLine(self.handle_rbls, 2 * idx, point)
-        self._setBezierLine(self.bg.points, self.bezier_rbl)
+        self._setBezierLine(self.bg.getPointList(revert=True), self.bezier_rbl)
 
     # アンカーを削除してベジエ曲線の表示を更新
     def delete_anchor(self, idx):
@@ -86,7 +86,7 @@ class BezierMarker:
         self._removeMarker(self.handle_marks, 2 * idx)
         self._removeRubberBand(self.handle_rbls, 2 * idx)
         self._removeMarker(self.anchor_marks, idx)
-        self._setBezierLine(self.bg.points, self.bezier_rbl)
+        self._setBezierLine(self.bg.getPointList(revert=True), self.bezier_rbl)
 
     # アンカーを移動してベジエ曲線の表示を更新
     def move_anchor(self, idx, point):
@@ -94,13 +94,13 @@ class BezierMarker:
         move anchor and update bezier curve
         """
         self.anchor_marks[idx].setCenter(point)
-        self.handle_marks[idx * 2].setCenter(self.bg.getHandle(idx * 2))
-        self.handle_marks[idx * 2 + 1].setCenter(self.bg.getHandle(idx * 2 + 1))
+        self.handle_marks[idx * 2].setCenter(self.bg.getHandle(idx * 2,revert=True))
+        self.handle_marks[idx * 2 + 1].setCenter(self.bg.getHandle(idx * 2 + 1,revert=True))
         self.handle_rbls[idx * 2].movePoint(0, point, 0)
         self.handle_rbls[idx * 2 + 1].movePoint(0, point, 0)
-        self.handle_rbls[idx * 2].movePoint(1, self.bg.getHandle(idx * 2), 0)
-        self.handle_rbls[idx * 2 + 1].movePoint(1, self.bg.getHandle(idx * 2 + 1), 0)
-        self._setBezierLine(self.bg.points, self.bezier_rbl)
+        self.handle_rbls[idx * 2].movePoint(1, self.bg.getHandle(idx * 2,revert=True), 0)
+        self.handle_rbls[idx * 2 + 1].movePoint(1, self.bg.getHandle(idx * 2 + 1,revert=True), 0)
+        self._setBezierLine(self.bg.getPointList(revert=True), self.bezier_rbl)
 
     def move_handle(self, idx, point):
         """"
@@ -108,7 +108,7 @@ class BezierMarker:
         """
         self.handle_rbls[idx].movePoint(1, point, 0)
         self.handle_marks[idx].setCenter(point)
-        self._setBezierLine(self.bg.points, self.bezier_rbl)
+        self._setBezierLine(self.bg.getPointList(revert=True), self.bezier_rbl)
 
     def show_handle(self, show):
         """

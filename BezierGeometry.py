@@ -24,7 +24,8 @@ import numpy as np
 
 class BezierGeometry:
 
-    def __init__(self):
+    def __init__(self,projectCRS):
+        self.projectCRS = projectCRS
         self.INTERPOLATION = 10  # interpolation count from anchor to anchor
         self.points = []  # bezier line points list
         self.anchor = []  # anchor list
@@ -32,19 +33,21 @@ class BezierGeometry:
         self.history = []  # undo history
 
     @classmethod
-    def convertPointToBezier(cls, point):
-        bg = cls()
+    def convertPointToBezier(cls, projectCRS,point):
+        bg = cls(projectCRS)
+        point = bg._trans(point)
         bg._addAnchor(0, point)
         return bg
 
     @classmethod
-    def checkIsBezier(cls, polyline):
+    def checkIsBezier(cls, projectCRS,polyline):
         is_bezier = True
-        bg = cls()
+        bg = cls(projectCRS)
         # if polyline length isn't match cause of edited other tool, points are interpolated.
         if len(polyline) % bg.INTERPOLATION != 1:
             is_bezier = False
         else:
+            polyline = [bg._trans(p) for p in polyline]
             point_list = bg._lineToPointList(polyline)
             # Check if the number of points accidentally matches with the case of Bezier
             # if not bezier, calculation of anchor position is different from "A" and "B"
@@ -58,8 +61,9 @@ class BezierGeometry:
         return is_bezier
 
     @classmethod
-    def convertLineToBezier(cls, polyline, linetype="bezier"): #bezier,line,curve
-        bg = cls()
+    def convertLineToBezier(cls, projectCRS,polyline, linetype="bezier"): #bezier,line,curve
+        bg = cls(projectCRS)
+        polyline = [bg._trans(p) for p in polyline]
         if linetype == "bezier":
             point_list = bg._lineToPointList(polyline)
             bg._invertBezierPointListToBezier(point_list)
@@ -71,6 +75,9 @@ class BezierGeometry:
             bg._convertGeometryToBezier(geom, 0, scale=1.0, last=True)
 
         return bg
+
+    def setCRS(self, projectCRS):
+        self.projectCRS = projectCRS
 
     def asGeometry(self, layer_type, layer_wkbtype):
         """
@@ -104,25 +111,30 @@ class BezierGeometry:
             result = None
         else:
             result = False
+        geom = self._transgeom(geom,revert=True)
         return result, geom
 
     def asPolyline(self):
         """
         return bezier line points list
         """
-        return self.points
+        points = [self._trans(p,revert=True) for p in self.points]
+        return points
 
     def add_anchor(self, idx, point, undo=True):
+        point = self._trans(point)
         if undo:
             self.history.append({"state": "add_anchor", "pointidx": idx})
         self._addAnchor(idx, point)
 
     def move_anchor(self, idx, point, undo=True):
+        point = self._trans(point)
         if undo:
             self.history.append({"state": "move_anchor", "pointidx": idx, "point": point})
         self._moveAnchor(idx, point)
 
     def move_anchor2(self, idx, point):
+        point = self._trans(point)
         self.history.append({"state": "move_anchor2", "pointidx": idx, "point": point})
         self._moveAnchor(idx, point)
         self._moveAnchor(0, point)
@@ -140,7 +152,7 @@ class BezierGeometry:
         self._deleteAnchor(idx)
 
     def delete_anchor2(self, idx, point):
-
+        point = self._trans(point)
         self.history.append(
             {"state": "delete_anchor2",
              "pointidx": idx,
@@ -154,6 +166,7 @@ class BezierGeometry:
         self._addAnchor(self.anchorCount(), self.getAnchor(0))
 
     def move_handle(self, idx, point, undo=True):
+        point = self._trans(point)
         if undo:
             self.history.append({"state": "move_handle", "pointidx": idx, "point": point})
         self._moveHandle(idx, point)
@@ -162,14 +175,17 @@ class BezierGeometry:
         """
         move the handles on both sides of the anchor as you drag the anchor
         """
+        point = self._trans(point)
         handle_idx = anchor_idx * 2
         p = self.getAnchor(anchor_idx)
         pb = QgsPointXY(p[0] - (point[0] - p[0]), p[1] - (point[1] - p[1]))
         self._moveHandle(handle_idx, pb)
         self._moveHandle(handle_idx + 1, point)
+        pb = self._trans(pb,revert=True)
         return handle_idx, pb
 
     def delete_handle(self, idx, point):
+        point = self._trans(point)
         self.history.append(
             {"state": "delete_handle",
              "pointidx": idx,
@@ -184,6 +200,7 @@ class BezierGeometry:
         self._flipBezierLine()
 
     def insert_anchor(self, point_idx, point):
+        point = self._trans(point)
         anchor_idx = self._AnchorIdx(point_idx)
         self.history.append(
             {"state": "insert_anchor",
@@ -198,6 +215,7 @@ class BezierGeometry:
         """
         update bezier line by geometry. if no bezier line, added new.
         """
+        update_geom = self._transgeom(update_geom)
         dist = scale / 250
         bezier_line = self.points
         update_line = update_geom.asPolyline()
@@ -351,6 +369,7 @@ class BezierGeometry:
         return two bezier line split at point
         """
         # if split position is on anchor
+        point = self._trans(point)
         if isAnchor:
             lineA = self.points[0:self._pointsIdx(idx) + 1]
             lineB = self.points[self._pointsIdx(idx):]
@@ -360,17 +379,46 @@ class BezierGeometry:
             self._insertAnchorPointToBezier(idx, anchor_idx, point)
             lineA = self.points[0:self._pointsIdx(anchor_idx) + 1]
             lineB = self.points[self._pointsIdx(anchor_idx):]
+        lineA = [self._trans(p,revert=True) for p in lineA]
+        lineB = [self._trans(p, revert=True) for p in lineB]
 
         return lineA, lineB
 
     def anchorCount(self):
         return len(self.anchor)
 
-    def getAnchor(self, idx):
-        return self.anchor[idx]
+    def getAnchorList(self,revert=False):
+        if revert:
+            anchorList = [self._trans(p,revert=True) for p in self.anchor]
+        else:
+            anchorList = self.anchor
+        return anchorList
 
-    def getHandle(self, idx):
-        return self.handle[idx]
+    def getAnchor(self, idx,revert=False):
+        p = self.anchor[idx]
+        if revert:
+            p = self._trans(p, revert=True)
+        return p
+
+    def getHandleList(self,revert=False):
+        if revert:
+            handleList = [self._trans(p,revert=True) for p in self.handle]
+        else:
+            handleList = self.handle
+        return handleList
+
+    def getHandle(self, idx,revert=False):
+        p = self.handle[idx]
+        if revert:
+            p = self._trans(p,revert=True)
+        return p
+
+    def getPointList(self,revert=False):
+        if revert:
+            pointList = [self._trans(p,revert=True) for p in self.points]
+        else:
+            pointList = self.points
+        return pointList
 
     def reset(self):
         self.points = []
@@ -379,6 +427,7 @@ class BezierGeometry:
         self.history = []
 
     def checkSnapToAnchor(self, point, clicked_idx, d):
+        point = self._trans(point)
         snapped = False
         snap_point = None
         snap_idx = None
@@ -389,18 +438,19 @@ class BezierGeometry:
                 if near:
                     snapped = True
                     snap_idx = i
-                    snap_point = p
+                    snap_point = self._trans(p,revert=True)
                     break
             # if the anchor is moving, except for snapping to itself
             elif clicked_idx != i:
                 if near:
                     snapped = True
                     snap_idx = i
-                    snap_point = p
+                    snap_point = self._trans(p,revert=True)
                     break
         return snapped, snap_point, snap_idx
 
     def checkSnapToHandle(self, point, d):
+        point = self._trans(point)
         snapped = False
         snap_point = None
         snap_idx = None
@@ -411,11 +461,12 @@ class BezierGeometry:
             if near:
                 snapped = True
                 snap_idx = i
-                snap_point = p
+                snap_point = self._trans(p,revert=True)
                 break
         return snapped, snap_point, snap_idx
 
     def checkSnapToLine(self, point, d):
+        point = self._trans(point)
         snapped = False
         snap_point = None
         snap_idx = None
@@ -425,10 +476,12 @@ class BezierGeometry:
             if math.sqrt(dist) < d:
                 snapped = True
                 snap_idx = afterVertex
-                snap_point = minDistPoint
+                snap_point = self._trans(minDistPoint,revert=True)
+
         return snapped, snap_point, snap_idx
 
     def checkSnapToStart(self, point, d):
+        point = self._trans(point)
         snapped = False
         snap_point = None
         snap_idx = None
@@ -438,7 +491,8 @@ class BezierGeometry:
             if near:
                 snapped = True
                 snap_idx = 0
-                snap_point = start_anchor
+                snap_point = self._trans(start_anchor,revert=True)
+
         return snapped, snap_point, snap_idx
 
     def undo(self):
@@ -861,6 +915,25 @@ class BezierGeometry:
         geom = QgsGeometry.fromPolylineXY(polyline)
         smooth_geom = geom.smooth()
         return smooth_geom
+
+    def _trans(self,p,revert=False):
+        destCrs = QgsCoordinateReferenceSystem("EPSG:3857")
+        if revert:
+            tr = QgsCoordinateTransform(destCrs, self.projectCRS, QgsProject.instance())
+        else:
+            tr = QgsCoordinateTransform(self.projectCRS, destCrs, QgsProject.instance())
+        p = tr.transform(p)
+        return p
+
+    def _transgeom(self,geom,revert=False):
+        g = QgsGeometry(geom)
+        destCrs = QgsCoordinateReferenceSystem("EPSG:3857")
+        if revert:
+            tr = QgsCoordinateTransform(destCrs, self.projectCRS, QgsProject.instance())
+        else:
+            tr = QgsCoordinateTransform(self.projectCRS, destCrs, QgsProject.instance())
+        g.transform(tr)
+        return g
 
     # for debug
     def dump_history(self):

@@ -41,6 +41,7 @@ class BezierEditingTool(QgsMapTool):
         # qgis interface
         self.iface = iface
         self.canvas = canvas
+        self.canvas.destinationCrsChanged.connect(self.crsChanged)
         # freehand tool line
         self.freehand_rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.freehand_rbl.setColor(QColor(255, 0, 0, 150))
@@ -94,6 +95,12 @@ class BezierEditingTool(QgsMapTool):
 
     def tr(self, message):
         return QCoreApplication.translate('BezierEditingTool', message)
+
+    def crsChanged(self):
+        if self.bg is not None:
+            self.iface.messageBar().pushMessage("Warning", "Reset editing data", level=Qgis.Warning)
+            self.resetEditing()
+        self.checkCRS()
 
     def canvasPressEvent(self, event):
         modifiers = QApplication.keyboardModifiers()
@@ -155,7 +162,7 @@ class BezierEditingTool(QgsMapTool):
                             self.bg.delete_anchor2(snap_idx[1], snap_point[1])
                             self.bm.delete_anchor(snap_idx[1])
                             self.bm.delete_anchor(0)
-                            self.bm.add_anchor(self.bg.anchorCount(), self.bg.getAnchor(0))
+                            self.bm.add_anchor(self.bg.anchorCount(), self.bg.getAnchor(0,revert=True))
                             self.guideAnchorIdxs = []
                         else:
                             self.bg.delete_anchor(snap_idx[1], snap_point[1])
@@ -165,7 +172,7 @@ class BezierEditingTool(QgsMapTool):
                     # if click on handle with shift, move handle to anchor
                     elif snapped[2]:
                         self.bg.delete_handle(snap_idx[2], snap_point[2])
-                        point = self.bg.getAnchor(int(snap_idx[2] / 2))
+                        point = self.bg.getAnchor(int(snap_idx[2] / 2),revert=True)
                         self.bm.move_handle(snap_idx[2], point)
                 # click with no key
                 else:
@@ -192,7 +199,7 @@ class BezierEditingTool(QgsMapTool):
                         if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
                             return
                         if not self.editing:
-                            self.bg = BezierGeometry()
+                            self.bg = BezierGeometry(self.projectCRS)
                             self.bm = BezierMarker(self.canvas, self.bg)
                             self.editing = True
                         self.mouse_state = "add_anchor"
@@ -216,7 +223,7 @@ class BezierEditingTool(QgsMapTool):
             elif event.button() == Qt.LeftButton:
                 # if click on canvas, freehand drawing start
                 if not self.editing:
-                    self.bg = BezierGeometry()
+                    self.bg = BezierGeometry(self.projectCRS)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     point = mouse_point
                     self.bg.add_anchor(0, point, undo=False)
@@ -498,16 +505,16 @@ class BezierEditingTool(QgsMapTool):
 
         if geom.type() == QgsWkbTypes.PointGeometry:
             point = geom.asPoint()
-            self.bg = BezierGeometry.convertPointToBezier(point)
+            self.bg = BezierGeometry.convertPointToBezier(self.projectCRS,point)
             self.bm = BezierMarker(self.canvas, self.bg)
             self.bm.add_anchor(0, point)
             geom_type = geom.type()
         elif geom.type() == QgsWkbTypes.LineGeometry:
             geom.convertToSingleType()
             polyline = geom.asPolyline()
-            is_bezier = BezierGeometry.checkIsBezier(polyline)
+            is_bezier = BezierGeometry.checkIsBezier(self.projectCRS,polyline)
             if is_bezier:
-                self.bg = BezierGeometry.convertLineToBezier(polyline)
+                self.bg = BezierGeometry.convertLineToBezier(self.projectCRS,polyline)
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
@@ -524,7 +531,7 @@ class BezierEditingTool(QgsMapTool):
                         linetype="line"
                     else:
                         linetype = "curve"
-                    self.bg = BezierGeometry.convertLineToBezier(polyline, linetype)
+                    self.bg = BezierGeometry.convertLineToBezier(self.projectCRS,polyline, linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
                     geom_type = geom.type()
@@ -532,9 +539,9 @@ class BezierEditingTool(QgsMapTool):
         elif geom.type() == QgsWkbTypes.PolygonGeometry:
             geom.convertToSingleType()
             polygon = geom.asPolygon()
-            is_bezier = BezierGeometry.checkIsBezier(polygon[0])
+            is_bezier = BezierGeometry.checkIsBezier(self.projectCRS,polygon[0])
             if is_bezier:
-                self.bg = BezierGeometry.convertLineToBezier(polygon[0])
+                self.bg = BezierGeometry.convertLineToBezier(self.projectCRS,polygon[0])
                 self.bm = BezierMarker(self.canvas, self.bg)
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
@@ -551,7 +558,7 @@ class BezierEditingTool(QgsMapTool):
                         linetype = "line"
                     else:
                         linetype = "curve"
-                    self.bg = BezierGeometry.convertLineToBezier(polygon[0], linetype)
+                    self.bg = BezierGeometry.convertLineToBezier(self.projectCRS,polygon[0], linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
                     geom_type = geom.type()
@@ -668,6 +675,7 @@ class BezierEditingTool(QgsMapTool):
         if self.bg is not None:
             point = snap_point[0]
             snap_distance = self.canvas.scale() / 500
+            d = self.canvas.mapUnitsPerPixel() * 4
             snapped[1], snap_point[1], snap_idx[1] = self.bg.checkSnapToAnchor(point, self.clicked_idx, snap_distance)
             if self.show_handle and self.mode == "bezier":
                 snapped[2], snap_point[2], snap_idx[2] = self.bg.checkSnapToHandle(point, snap_distance)
@@ -688,7 +696,7 @@ class BezierEditingTool(QgsMapTool):
                     doSnapIdx = 1
 
                 for i, idx in enumerate(self.guideAnchorIdxs):
-                    anchor_point = self.bg.anchor[idx]
+                    anchor_point = self.bg.getAnchor(idx,revert=True)
                     # don't show the guide of myself
                     if idx != self.clicked_idx and idx != snap_idx[1]:
                         if i == doSnapIdx:
@@ -724,13 +732,25 @@ class BezierEditingTool(QgsMapTool):
         self.guideAnchorIdxs = []
 
     def guide_snap_setting(self):
-        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Angle"), self.tr(u"Enter Angle snap unit (degree)"), self.snapToAngleUnit, 0, 90)
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Angle"), self.tr(u"Enter Snap Angle (degree)"), self.snapToAngleUnit, 0, 90)
         if ok:
             self.snapToAngleUnit = num
-        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Length"), self.tr(u"Enter Length snap unit (meter)"), self.snapToLengthUnit, 0)
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Length"), self.tr(u"Enter Snap Length (if latlon, enter the unit by second)"), self.snapToLengthUnit, 0)
         if ok:
-            self.snapToLengthUnit = num
+            if self.projectCRS.projectionAcronym() == "longlat":
+                self.snapToLengthUnit = num/3600
+            else:
+                self.snapToLengthUnit = num
         self.guideAnchorIdxs = []
+
+    def _trans(self,p,revert=False):
+        destCrs = QgsCoordinateReferenceSystem("EPSG:3857")
+        if revert:
+            tr = QgsCoordinateTransform(destCrs, self.projectCRS, QgsProject.instance())
+        else:
+            tr = QgsCoordinateTransform(self.projectCRS, destCrs, QgsProject.instance())
+        p = tr.transform(p)
+        return p
 
     def clear_guide(self):
         self.guideAnchorIdxs = []
@@ -794,7 +814,10 @@ class BezierEditingTool(QgsMapTool):
         angle_text = u"{:.1f}°".format(guide_deg)
         gl = self.guideLabel(angle_text, anchor_point, snapped_angle)
         self.guideLabelGroup.addToGroup(gl)
-        length_text = "{:.1f}m".format(guide_length)
+        if self.projectCRS.projectionAcronym() == "longlat":
+            length_text = u"{:.1f}″".format(guide_length*3600)
+        else:
+            length_text = "{:.1f}m".format(guide_length)
         gl = self.guideLabel(length_text, anchor_point + (guide_point - anchor_point) / 2, snapped_length)
         self.guideLabelGroup.addToGroup(gl)
 
@@ -853,7 +876,7 @@ class BezierEditingTool(QgsMapTool):
 
     def getNearFeatures(self, layer, point, rect=None):
         if rect is None:
-            dist = self.canvas.scale() / 500
+            dist = self.canvas.mapUnitsPerPixel() * 4
             rect = QgsRectangle((point.x() - dist), (point.y() - dist), (point.x() + dist), (point.y() + dist))
         self.checkCRS()
         if self.layerCRS.srsid() != self.projectCRS.srsid():
@@ -877,10 +900,11 @@ class BezierEditingTool(QgsMapTool):
             self.snapping = False
 
     def checkCRS(self):
-        self.layerCRS = self.canvas.currentLayer().crs()
+        self.log("check crs")
         self.projectCRS = self.canvas.mapSettings().destinationCrs()
-        if self.projectCRS.projectionAcronym() == "longlat":
-            QMessageBox.warning(None, "Warning", self.tr(u"Change to project's CRS from latlon."))
+        if self.canvas.currentLayer() is not None:
+            self.layerCRS = self.canvas.currentLayer().crs()
+
 
     def selectFeatures(self, point, rect=None):
         # layers = QgsMapLayerRegistry.instance().mapLayers().values()
@@ -985,7 +1009,7 @@ class BezierEditingTool(QgsMapTool):
                     line = line0 + line1[1:]
                 # If the end points are separated, the are interpolated using Bezier line
                 else:
-                    b = BezierGeometry()
+                    b = BezierGeometry(self.projectCRS)
                     b.add_anchor(0, line0[-1], undo=False)
                     b.add_anchor(1, line1[0], undo=False)
                     interporate_line = b.asPolyline()
