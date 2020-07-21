@@ -90,7 +90,6 @@ class BezierEditingTool(QgsMapTool):
         self.smartGuideOn = False
         self.snapToLengthUnit = 0
         self.snapToAngleUnit = 0
-        self.guideAnchorIdxs = []
         self.generate_menu()
 
     def tr(self, message):
@@ -140,7 +139,18 @@ class BezierEditingTool(QgsMapTool):
                         self.clicked_idx = self.bg.anchorCount()
                         self.bg.add_anchor(self.clicked_idx, snap_point[1])
                         self.bm.add_anchor(self.clicked_idx, snap_point[1])
-
+                    # add the anchor snapped by guide. guide is on by ctrl
+                    else:
+                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
+                            return
+                        if not self.editing:
+                            self.bg = BezierGeometry(self.projectCRS)
+                            self.bm = BezierMarker(self.canvas, self.bg)
+                            self.editing = True
+                        self.mouse_state = "add_anchor"
+                        self.clicked_idx = self.bg.anchorCount()
+                        self.bg.add_anchor(self.clicked_idx, snap_point[0])
+                        self.bm.add_anchor(self.clicked_idx, snap_point[0])
                 # with alt
                 elif bool(modifiers & Qt.AltModifier):
                     # if click on anchor with alt, move out a handle from anchor
@@ -163,11 +173,9 @@ class BezierEditingTool(QgsMapTool):
                             self.bm.delete_anchor(snap_idx[1])
                             self.bm.delete_anchor(0)
                             self.bm.add_anchor(self.bg.anchorCount(), self.bg.getAnchor(0,revert=True))
-                            self.guideAnchorIdxs = []
                         else:
                             self.bg.delete_anchor(snap_idx[1], snap_point[1])
                             self.bm.delete_anchor(snap_idx[1])
-                            self.guideAnchorIdxs = []
 
                     # if click on handle with shift, move handle to anchor
                     elif snapped[2]:
@@ -206,7 +214,6 @@ class BezierEditingTool(QgsMapTool):
                         self.clicked_idx = self.bg.anchorCount()
                         self.bg.add_anchor(self.clicked_idx, snap_point[0])
                         self.bm.add_anchor(self.clicked_idx, snap_point[0])
-                        self.guideAnchorIdxs = []
         # freehand tool
         elif self.mode == "freehand":
             # right click
@@ -297,6 +304,11 @@ class BezierEditingTool(QgsMapTool):
 
     def canvasMoveEvent(self, event):
         modifiers = QApplication.keyboardModifiers()
+        if bool(modifiers & Qt.ControlModifier):
+            self.smartGuideOn = True
+        else:
+            self.smartGuideOn = False
+            #self.smartGuideOn = self.guideAction.isChecked()
         layer = self.canvas.currentLayer()
         if not layer or layer.type() != QgsMapLayer.VectorLayer:
             return
@@ -383,7 +395,6 @@ class BezierEditingTool(QgsMapTool):
         if self.mode == "bezier":
             self.clicked_idx = None
             self.mouse_state = "free"
-            self.guideAnchorIdxs = []
         # freehand tool
         elif self.mode == "freehand":
             # convert drawing line to bezier line
@@ -491,7 +502,6 @@ class BezierEditingTool(QgsMapTool):
         self.editing_feature_id = None
         self.editing_geom_type = None
         self.editing = False
-        self.guideAnchorIdxs = []
 
     def convertFeatureToBezier(self, feature):
         """
@@ -642,8 +652,6 @@ class BezierEditingTool(QgsMapTool):
             if history_length == 0:
                 self.resetEditing()
 
-        self.guideAnchorIdxs = []
-
     def showHandle(self, checked):
         """
         change bezier handle visibility
@@ -675,37 +683,25 @@ class BezierEditingTool(QgsMapTool):
         if self.bg is not None:
             point = snap_point[0]
             snap_distance = self.canvas.scale() / 500
-            d = self.canvas.mapUnitsPerPixel() * 4
+            #d = self.canvas.mapUnitsPerPixel() * 4
             snapped[1], snap_point[1], snap_idx[1] = self.bg.checkSnapToAnchor(point, self.clicked_idx, snap_distance)
             if self.show_handle and self.mode == "bezier":
                 snapped[2], snap_point[2], snap_idx[2] = self.bg.checkSnapToHandle(point, snap_distance)
             snapped[3], snap_point[3], snap_idx[3] = self.bg.checkSnapToLine(point, snap_distance)
             snapped[4], snap_point[4], snap_idx[4] = self.bg.checkSnapToStart(point, snap_distance)
 
-            if self.smartGuideOn and self.mode == "bezier":
-                doSnapIdx = 0
-                if snapped[1]:
-                    # Add the touched anchor to guide anchor list
-                    # Snap to the last touch. Therefore, the last touch is made first. Then remove duplicates.
-                    self.guideAnchorIdxs.append(snap_idx[1])
-                    self.guideAnchorIdxs.reverse()
-                    self.guideAnchorIdxs = sorted(set(self.guideAnchorIdxs), key=self.guideAnchorIdxs.index)
-
-                # snap to next guide anchor if moving anchor
-                if self.mouse_state == "move_anchor":
-                    doSnapIdx = 1
-
-                for i, idx in enumerate(self.guideAnchorIdxs):
-                    anchor_point = self.bg.getAnchor(idx,revert=True)
-                    # don't show the guide of myself
-                    if idx != self.clicked_idx and idx != snap_idx[1]:
-                        if i == doSnapIdx:
-                            guide_point = self.smartGuide(anchor_point, snap_point[0], doSnap=True)
-                            snap_point[0] = guide_point
-                            snap_point[1] = guide_point
-                        else:
-                            self.smartGuide(anchor_point, snap_point[0], doSnap=False)
-
+            if self.smartGuideOn and self.mode == "bezier" and self.bg.anchorCount()>0 and not snapped[1]:
+                # calc the angle from line made by point0 and point1
+                if self.bg.anchorCount() >= 2:
+                    origin_point0 = self.bg.getAnchor(-2, revert=True)
+                    origin_point1 = self.bg.getAnchor(-1, revert=True)
+                # calc the angle from horizontal line
+                elif self.bg.anchorCount() == 1:
+                    origin_point0 = None
+                    origin_point1 = self.bg.getAnchor(0, revert=True)
+                guide_point = self.smartGuide(origin_point0, origin_point1, snap_point[0], doSnap=True)
+                snap_point[0] = guide_point
+                snap_point[1] = guide_point
         # show snap marker, but didn't show to line snap
         for i in [0, 1, 2, 4]:
             if snapped[i]:
@@ -717,19 +713,10 @@ class BezierEditingTool(QgsMapTool):
 
     def generate_menu(self):
         self.menu = QMenu()
-        self.guideAction = self.menu.addAction(self.tr(u"smart guide"))
-        self.guideAction.setCheckable(True)
-        self.guideAction.triggered.connect(self.set_smart_guide)
-        self.menu.addAction(self.tr("clear guide")).triggered.connect(self.clear_guide)
-        self.menu.addSeparator()
-        self.snapSttingAction = self.menu.addAction(self.tr(u"snap setting..."))
-        self.snapSttingAction.triggered.connect(self.guide_snap_setting)
+        self.menu.addAction(self.tr(u"guide setting...")).triggered.connect(self.guide_snap_setting)
+        self.menu.addAction(self.tr("reset guide")).triggered.connect(self.clear_guide)
         self.menu.addSeparator()
         self.closeAction = self.menu.addAction(self.tr(u"Close"))
-
-    def set_smart_guide(self, checked):
-        self.smartGuideOn = checked
-        self.guideAnchorIdxs = []
 
     def guide_snap_setting(self):
         num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Angle"), self.tr(u"Enter Snap Angle (degree)"), self.snapToAngleUnit, 0, 90)
@@ -741,19 +728,10 @@ class BezierEditingTool(QgsMapTool):
                 self.snapToLengthUnit = num/3600
             else:
                 self.snapToLengthUnit = num
-        self.guideAnchorIdxs = []
-
-    def _trans(self,p,revert=False):
-        destCrs = QgsCoordinateReferenceSystem("EPSG:3857")
-        if revert:
-            tr = QgsCoordinateTransform(destCrs, self.projectCRS, QgsProject.instance())
-        else:
-            tr = QgsCoordinateTransform(self.projectCRS, destCrs, QgsProject.instance())
-        p = tr.transform(p)
-        return p
 
     def clear_guide(self):
-        self.guideAnchorIdxs = []
+        self.snapToAngleUnit = 0
+        self.snapToLengthUnit = 0
 
     def lengthSnapPoint(self, origin_point, point):
         v = point - origin_point
@@ -767,27 +745,54 @@ class BezierEditingTool(QgsMapTool):
                                 origin_point.y() + snap_length * math.sin(theta))
         return snap_point, snap_length, org_length
 
-    def angleSnapPoint(self, origin_point, point):
-        v = point - origin_point
-        theta = math.atan2(v.y(), v.x())
-        org_deg = math.degrees(theta)
-        if self.snapToAngleUnit == 0:
-            snap_deg = org_deg
+    def angleSnapPoint(self, origin_point0,origin_point1, point):
+
+        if (origin_point0 is None or (origin_point1.x() == point.x() and origin_point1.y() == point.y())):
+            v = point - origin_point1
+            theta = math.atan2(v.y(), v.x())
+            org_deg = math.degrees(theta)
+            if self.snapToAngleUnit == 0:
+                snap_deg = org_deg
+                snap_point = point
+            else:
+                snap_deg = ((org_deg + self.snapToAngleUnit / 2.0) // self.snapToAngleUnit) * self.snapToAngleUnit
+                snap_theta = math.radians(snap_deg)
+                if snap_deg == 90 or snap_deg == -90:
+                    snap_point = QgsPointXY(origin_point1.x(), origin_point1.y() + v.y())
+                else:
+                    snap_point = QgsPointXY(origin_point1.x() + v.x(), origin_point1.y() + math.tan(snap_theta) * v.x())
+
         else:
-            snap_deg = ((org_deg + self.snapToAngleUnit / 2.0) // self.snapToAngleUnit) * self.snapToAngleUnit
-        snap_theta = math.radians(snap_deg)
-        if snap_deg == 90 or snap_deg == -90:
-            snap_point = QgsPointXY(origin_point.x(), origin_point.y() + v.y())
-        else:
-            snap_point = QgsPointXY(origin_point.x()+v.x(), origin_point.y() + math.tan(snap_theta) * v.x())
+            v_a = origin_point1 - origin_point0
+            v_b = point - origin_point1
+
+            rot_theta = math.atan2(v_a.y(), v_a.x())
+            v_b_rot = QgsPointXY(math.cos(-rot_theta) * v_b.x() - math.sin(-rot_theta) * v_b.y(),
+                                 math.sin(-rot_theta) * v_b.x() + math.cos(-rot_theta) * v_b.y())
+            theta = math.atan2(v_b_rot.y(), v_b_rot.x())
+            org_deg = math.degrees(theta)
+            if self.snapToAngleUnit == 0:
+                snap_deg = org_deg
+                snap_point = point
+            else:
+                snap_deg = ((org_deg + self.snapToAngleUnit / 2.0) // self.snapToAngleUnit) * self.snapToAngleUnit
+                snap_theta = math.radians(snap_deg)
+                if snap_deg == 90 or snap_deg == -90:
+                    v_b_rot_snap = QgsPointXY(0, v_b_rot.y())
+                else:
+                    v_b_rot_snap = QgsPointXY(v_b_rot.x(),math.tan(snap_theta)*v_b_rot.x())
+                v_b_rot2 = QgsPointXY(math.cos(rot_theta) * v_b_rot_snap.x() - math.sin(rot_theta) * v_b_rot_snap.y(),
+                                      math.sin(rot_theta) * v_b_rot_snap.x() + math.cos(rot_theta) * v_b_rot_snap.y())
+                snap_point = QgsPointXY(v_b_rot2.x() + origin_point1.x(),v_b_rot2.y() + origin_point1.y())
+
         return snap_point, snap_deg, org_deg
 
-    def smartGuide(self,anchor_point, point, doSnap=False):
+    def smartGuide(self,origin_point0,origin_point1, point, doSnap=False):
         snapped_angle = False
         snapped_length = False
 
         if doSnap:
-            snap_point, snap_deg, org_deg = self.angleSnapPoint(anchor_point, point)
+            snap_point, snap_deg, org_deg = self.angleSnapPoint(origin_point0,origin_point1, point)
             if self.snapToAngleUnit > 0:
                 guide_point = snap_point
                 guide_deg = snap_deg
@@ -795,8 +800,10 @@ class BezierEditingTool(QgsMapTool):
             else:
                 guide_point = point
                 guide_deg = org_deg
-            snap_point, snap_length, org_length = self.lengthSnapPoint(anchor_point, guide_point)
-            if self.snapToLengthUnit > 0:
+
+            snap_point, snap_length, org_length = self.lengthSnapPoint(origin_point1, guide_point)
+            snap_distance = self.canvas.scale() / 500
+            if self.snapToLengthUnit > 0 and abs(snap_length-org_length) < snap_distance:
                 guide_point = snap_point
                 guide_length = snap_length
                 snapped_length = True
@@ -804,28 +811,21 @@ class BezierEditingTool(QgsMapTool):
                 guide_point = guide_point
                 guide_length = org_length
 
-        else:
-            snap_point, snap_deg, org_deg = self.angleSnapPoint(anchor_point, point)
-            guide_point = point
-            guide_deg = org_deg
-            snap_point, snap_length, org_length = self.lengthSnapPoint(anchor_point, guide_point)
-            guide_length = org_length
-
         angle_text = u"{:.1f}°".format(guide_deg)
-        gl = self.guideLabel(angle_text, anchor_point, snapped_angle)
+        gl = self.guideLabel(angle_text, origin_point1, snapped_angle)
         self.guideLabelGroup.addToGroup(gl)
         if self.projectCRS.projectionAcronym() == "longlat":
             length_text = u"{:.1f}″".format(guide_length*3600)
         else:
             length_text = "{:.1f}m".format(guide_length)
-        gl = self.guideLabel(length_text, anchor_point + (guide_point - anchor_point) / 2, snapped_length)
+        gl = self.guideLabel(length_text, origin_point1 + (guide_point - origin_point1) / 2, snapped_length)
         self.guideLabelGroup.addToGroup(gl)
 
         self.snap_mark.setCenter(guide_point)
         self.snap_mark.show()
 
-        v = guide_point - anchor_point
-        self.guide_rbl.addPoint(anchor_point - v*(10000.0))
+        v = guide_point - origin_point1
+        self.guide_rbl.addPoint(origin_point1 - v*(10000.0))
         self.guide_rbl.addPoint(guide_point + v*(10000.0))
         self.guide_rbl.show()
 
@@ -840,8 +840,10 @@ class BezierEditingTool(QgsMapTool):
         lbltext.setDefaultFont(font)
         if snapped:
             lbltext.setHtml("<font color = \"#FF0000\">" + text + "</font>")
+            self.guide_rbl.setColor(QColor(255, 0, 0, 150))
         else:
             lbltext.setHtml("<font color = \"#0000FF\">" + text + "</font>")
+            self.guide_rbl.setColor(QColor(0, 0, 255, 150))
         label = QgsTextAnnotation()
         label.setMapPosition(position)
         label.setFrameOffsetFromReferencePoint(QPointF(15, -30))
