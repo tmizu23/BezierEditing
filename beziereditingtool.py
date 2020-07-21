@@ -529,7 +529,7 @@ class BezierEditingTool(QgsMapTool):
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
             else:
-                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
+                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?"),
                                              QMessageBox.Yes,
                                              QMessageBox.No)
                 if reply == QMessageBox.Yes:
@@ -556,7 +556,7 @@ class BezierEditingTool(QgsMapTool):
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
             else:
-                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool.Do you want to convert to bezier?"),
+                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?"),
                                              QMessageBox.Yes,
                                              QMessageBox.No)
                 if reply == QMessageBox.Yes:

@@ -44,12 +44,12 @@
         <translation type="obsolete">プロジェクトの投影法を緯度経度から変更してください。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="1043"/>
+        <location filename="../beziereditingtool.py" line="1042"/>
         <source>Select two features.</source>
         <translation>2本のラインを選択してください。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="1045"/>
+        <location filename="../beziereditingtool.py" line="1044"/>
         <source>Select Line Layer.</source>
         <translation>ラインレイヤを選択してください。</translation>
     </message>
@@ -101,7 +101,7 @@
     <message>
         <location filename="../beziereditingtool.py" line="559"/>
         <source>The feature isn&apos;t created by bezier tool.Do you want to convert to bezier?</source>
-        <translation>このフィーチャーはベジエツールで作成されていません。ベジエツールで編集できるように変換しますか？</translation>
+        <translation type="obsolete">このフィーチャーはベジエツールで作成されていません。ベジエツールで編集できるように変換しますか？</translation>
     </message>
     <message>
         <location filename="../beziereditingtool.py" line="536"/>
@@ -132,6 +132,11 @@
         <location filename="../beziereditingtool.py" line="717"/>
         <source>reset guide</source>
         <translation>ガイドの設定をリセット</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="559"/>
+        <source>The feature isn&apos;t created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?</source>
+        <translation type="unfinished">このフィーチャーはベジエツールまたはVer1.3以上で作成されていません。ベジエツールで編集できるように変換しますか？</translation>
     </message>
 </context>
 </TS>

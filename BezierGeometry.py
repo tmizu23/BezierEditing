@@ -56,6 +56,7 @@ class BezierGeometry:
                 psB, csB, peB, ceB = bg._convertPointListToAnchorAndHandle(points, "B")
 
                 if not(abs(csA[0] - csB[0]) < 0.0001 and abs(csA[1] - csB[1]) < 0.0001 and abs(ceA[0] - ceB[0]) < 0.0001 and abs(ceA[1] - ceB[1]) < 0.0001):
+                    bg.log("{}　{}　{}　{}".format(abs(csA[0] - csB[0]),abs(csA[1] - csB[1]),abs(ceA[0] - ceB[0]),abs(ceA[1] - ceB[1])))
                     is_bezier = False
 
         return is_bezier
