@@ -917,6 +917,13 @@ class BezierGeometry:
         return smooth_geom
 
     def _trans(self,p,revert=False):
+        if self.projectCRS.projectionAcronym() == "longlat" and revert==False:
+            #check latitude exceeded limits
+            if p.y() > 90:
+                p = QgsPointXY(p.x(),89.9999999)
+            elif p.y() < -90:
+                p = QgsPointXY(p.x(),-89.9999999)
+
         destCrs = QgsCoordinateReferenceSystem("EPSG:3857")
         if revert:
             tr = QgsCoordinateTransform(destCrs, self.projectCRS, QgsProject.instance())

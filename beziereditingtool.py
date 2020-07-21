@@ -902,7 +902,6 @@ class BezierEditingTool(QgsMapTool):
             self.snapping = False
 
     def checkCRS(self):
-        self.log("check crs")
         self.projectCRS = self.canvas.mapSettings().destinationCrs()
         if self.canvas.currentLayer() is not None:
             self.layerCRS = self.canvas.currentLayer().crs()
