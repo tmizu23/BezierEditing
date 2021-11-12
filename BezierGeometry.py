@@ -101,10 +101,10 @@ class BezierGeometry:
             else:
                 geom = QgsGeometry.fromPolylineXY(self.points)
                 result = True
-        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 2 and self.points[0] == self.points[-1]:
+        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] == self.points[-1]:
             geom = QgsGeometry.fromPolygonXY([self.points])
             result = True
-        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 2 and self.points[0] != self.points[-1]:
+        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] != self.points[-1]:
             # if first point and last point is different, interpolate points.
             point_list = self._lineToInterpolatePointList(
                 [self.points[-1], self.points[0]])
