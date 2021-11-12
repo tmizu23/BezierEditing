@@ -224,13 +224,15 @@ class BezierGeometry:
         """
         update bezier line by geometry. if no bezier line, added new.
         """
-        if update_geom.length() < 2:
-            return
+
         update_geom = self._transgeom(update_geom)
         dist = scale / 250
         bezier_line = self.points
         update_line = update_geom.asPolyline()
         bezier_geom = QgsGeometry.fromPolylineXY(bezier_line)
+
+        if len(update_line) < 3:
+            return
 
         # no bezier line or only a point.
         # The number of anchors is 1 instead of 0 because anchors are added on click if no bezier line.
