@@ -316,11 +316,18 @@ class BezierEditingTool(QgsMapTool):
             # add anchor and dragging
             if self.mouse_state == "add_anchor":
                 withAlt = bool(modifiers & Qt.AltModifier)
+                withShift = bool(modifiers & Qt.ShiftModifier)
                 handle_idx, pb = self.bg.move_handle2(
-                    self.clicked_idx, mouse_point, withAlt)
-                self.bm.move_handle(handle_idx + 1, mouse_point)
-                if not withAlt:
+                    self.clicked_idx, mouse_point, withAlt, withShift)
+                if withShift:
                     self.bm.move_handle(handle_idx, pb)
+                    self.bm.move_handle(
+                        handle_idx + 1, self.bg.anchor[self.clicked_idx])
+                elif withAlt:
+                    self.bm.move_handle(handle_idx + 1, mouse_point)
+                else:
+                    self.bm.move_handle(handle_idx, pb)
+                    self.bm.move_handle(handle_idx + 1, mouse_point)
 
             # insert anchor
             elif self.mouse_state == "insert_anchor":
