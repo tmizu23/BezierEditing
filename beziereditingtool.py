@@ -103,6 +103,11 @@ class BezierEditingTool(QgsMapTool):
         self.snapToAngleUnit = 0
         self.generate_menu()
 
+        # interpolation number
+        s = QgsSettings()
+        BezierGeometry.INTERPOLATION = int(
+            s.value("BezierEditing/INTERPOLATION", 10))
+
     def tr(self, message):
         return QCoreApplication.translate('BezierEditingTool', message)
 
@@ -775,6 +780,9 @@ class BezierEditingTool(QgsMapTool):
         self.menu.addAction(self.tr("reset guide")
                             ).triggered.connect(self.clear_guide)
         self.menu.addSeparator()
+        self.menu.addAction(self.tr(u"other settings...")
+                            ).triggered.connect(self.interpolate_setting)
+        self.menu.addSeparator()
         self.closeAction = self.menu.addAction(self.tr(u"Close"))
 
     def guide_snap_setting(self):
@@ -793,6 +801,21 @@ class BezierEditingTool(QgsMapTool):
     def clear_guide(self):
         self.snapToAngleUnit = 0
         self.snapToLengthUnit = 0
+
+    def interpolate_setting(self):
+        if self.bg is not None:
+            QMessageBox.warning(
+                None, "Warning", self.tr(u"Can't be set while editing."))
+            return
+
+        QMessageBox.warning(
+            None, "Warning", self.tr(u"Be careful when changing values, as Bezier curves with different numbers of interpolants will not be converted accurately."))
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Count"), self.tr(
+            u"Enter Interpolate Point Count (default 10)"), BezierGeometry.INTERPOLATION, 5, 99)
+        if ok:
+            BezierGeometry.INTERPOLATION = num
+            s = QgsSettings()
+            s.setValue("BezierEditing/INTERPOLATION",  num)
 
     def lengthSnapPoint(self, origin_point, point):
         v = point - origin_point

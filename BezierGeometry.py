@@ -23,10 +23,10 @@ import numpy as np
 
 
 class BezierGeometry:
+    INTERPOLATION = 10  # interpolation count from anchor to anchor
 
     def __init__(self, projectCRS):
         self.projectCRS = projectCRS
-        self.INTERPOLATION = 10  # interpolation count from anchor to anchor
         self.points = []  # bezier line points list
         self.anchor = []  # anchor list
         self.handle = []  # handle list
