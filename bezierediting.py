@@ -90,11 +90,13 @@ class BezierEditing(object):
         self.show_handle.setObjectName("BezierEditing_show_handle")
         self.show_handle.setCheckable(True)
         self.show_handle.setEnabled(False)
+        self.show_handle.setChecked(True)
         self.show_handle.toggled.connect(self.showhandle)
         self.toolbar.addAction(self.show_handle)
 
         # Create undo option
-        self.undo = QAction(QIcon(":/plugins/BezierEditing/icon/undoicon.svg"), "Bezier_Undo", self.iface.mainWindow())
+        self.undo = QAction(QIcon(
+            ":/plugins/BezierEditing/icon/undoicon.svg"), "Bezier_Undo", self.iface.mainWindow())
         self.undo.setObjectName("BezierEditing_undo")
         self.undo.setEnabled(False)
         self.undo.triggered.connect(self.beziertool.undo)
@@ -186,7 +188,6 @@ class BezierEditing(object):
         if self.iface.mapCanvas().mapTool() != self.currentTool:
             self.iface.mapCanvas().unsetMapTool(self.currentTool)
             self.currentTool = None
-
 
     def unload(self):
         self.toolbar.removeAction(self.bezier_edit)

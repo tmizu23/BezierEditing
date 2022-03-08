@@ -89,7 +89,7 @@ class BezierEditingTool(QgsMapTool):
         self.mouse_state = "free"
         self.editing = False  # in bezier editing or not
         self.snapping = None  # in snap setting or not
-        self.show_handle = False  # show handle or not
+        self.show_handle = True  # show handle or not
         self.editing_feature_id = None  # bezier editing feature id
         self.editing_geom_type = None  # bezier editing geom type
         self.clicked_idx = None  # clicked anchor or handle idx
