@@ -4,12 +4,12 @@
 <context>
     <name>BezierEditingTool</name>
     <message>
-        <location filename="../beziereditingtool.py" line="291"/>
+        <location filename="../beziereditingtool.py" line="298"/>
         <source>The layer geometry type is different.</source>
         <translation>レイヤのジオメトリタイプが違います。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="293"/>
+        <location filename="../beziereditingtool.py" line="301"/>
         <source>No feature to split.</source>
         <translation>切断できるフィーチャーがありません。</translation>
     </message>
@@ -19,7 +19,7 @@
         <translation type="obsolete">レイヤのジオメトリタイプが違います。編集を続けますか？</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="468"/>
+        <location filename="../beziereditingtool.py" line="533"/>
         <source>No feature. Do you want to continue editing?</source>
         <translation>フィーチャーがありません。編集を続けますか？</translation>
     </message>
@@ -29,12 +29,12 @@
         <translation type="obsolete">このフィーチャーはベジエ曲線に変換できません。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="577"/>
+        <location filename="../beziereditingtool.py" line="651"/>
         <source>The layer geometry type doesn&apos;t support.</source>
         <translation>このレイヤのジオメトリタイプはサポートしていません。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="636"/>
+        <location filename="../beziereditingtool.py" line="713"/>
         <source>Do you want to continue editing?</source>
         <translation>編集を続けますか？</translation>
     </message>
@@ -44,12 +44,12 @@
         <translation type="obsolete">プロジェクトの投影法を緯度経度から変更してください。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="1042"/>
+        <location filename="../beziereditingtool.py" line="1156"/>
         <source>Select two features.</source>
         <translation>2本のラインを選択してください。</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="1044"/>
+        <location filename="../beziereditingtool.py" line="1159"/>
         <source>Select Line Layer.</source>
         <translation>ラインレイヤを選択してください。</translation>
     </message>
@@ -69,7 +69,7 @@
         <translation type="obsolete">ガイドの設定...</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="719"/>
+        <location filename="../beziereditingtool.py" line="805"/>
         <source>Close</source>
         <translation>閉じる</translation>
     </message>
@@ -84,17 +84,17 @@
         <translation type="obsolete">スナップの長さ（緯度経度の場合は秒単位）</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="722"/>
+        <location filename="../beziereditingtool.py" line="808"/>
         <source>Angle</source>
         <translation>角度</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="725"/>
+        <location filename="../beziereditingtool.py" line="812"/>
         <source>Length</source>
         <translation>長さ</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="453"/>
+        <location filename="../beziereditingtool.py" line="517"/>
         <source>The layer geometry type is different. Or polygon isn&apos;t close. Do you want to continue editing?</source>
         <translation>レイヤのジオメトリタイプが違います。もしくは、ポリゴンが閉じていません。編集を続けますか？</translation>
     </message>
@@ -104,39 +104,64 @@
         <translation type="obsolete">このフィーチャーはベジエツールで作成されていません。ベジエツールで編集できるように変換しますか？</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="536"/>
+        <location filename="../beziereditingtool.py" line="606"/>
         <source>How to convert? Yes--&gt; by Line, No--&gt; by fitting Curve</source>
         <translation>どのように変換しますか？「はい」--&gt;直線で&#x3000;「いいえ」--&gt;フィッティングカーブで</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="563"/>
+        <location filename="../beziereditingtool.py" line="636"/>
         <source>How to convert? Yes--&gt; by Line, No--&gt;by fitting Curve</source>
         <translation>どのように変換しますか？「はい」--&gt;直線で&#x3000;「いいえ」--&gt;フィッティングカーブで</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="722"/>
+        <location filename="../beziereditingtool.py" line="808"/>
         <source>Enter Snap Angle (degree)</source>
         <translation>スナップの角度</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="725"/>
+        <location filename="../beziereditingtool.py" line="812"/>
         <source>Enter Snap Length (if latlon, enter the unit by second)</source>
         <translation>スナップの長さ（緯度経度の場合は秒単位）</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="716"/>
+        <location filename="../beziereditingtool.py" line="797"/>
         <source>guide setting...</source>
         <translation>ガイドの設定...</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="717"/>
+        <location filename="../beziereditingtool.py" line="799"/>
         <source>reset guide</source>
         <translation>ガイドの設定をリセット</translation>
     </message>
     <message>
-        <location filename="../beziereditingtool.py" line="559"/>
+        <location filename="../beziereditingtool.py" line="632"/>
         <source>The feature isn&apos;t created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?</source>
-        <translation type="unfinished">このフィーチャーはベジエツールまたはVer1.3以上で作成されていません。ベジエツールで編集できるように変換しますか？</translation>
+        <translation>このフィーチャーはベジエツールまたはVer1.3以上で作成されていません。ベジエツールで編集できるように変換しますか？</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="802"/>
+        <source>other settings...</source>
+        <translation>その他の設定...</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="826"/>
+        <source>Can&apos;t be set while editing.</source>
+        <translation>編集中は設定できません。</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="830"/>
+        <source>Be careful when changing values, as Bezier curves with different numbers of interpolants will not be converted accurately.</source>
+        <translation>補間点数の異なるベジェ曲線は正確に変換できないので、値を変更する場合は注意してください。</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="832"/>
+        <source>Count</source>
+        <translation>補間点数</translation>
+    </message>
+    <message>
+        <location filename="../beziereditingtool.py" line="832"/>
+        <source>Enter Interpolate Point Count (default 10)</source>
+        <translation>補間点数を入力してください（デフォルト10）</translation>
     </message>
 </context>
 </TS>
