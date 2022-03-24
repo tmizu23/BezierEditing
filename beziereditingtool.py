@@ -166,6 +166,12 @@ class BezierEditingTool(QgsMapTool):
                         self.mouse_state = "insert_anchor"
                         self.bg.insert_anchor(snap_idx[3], snap_point[3])
                         self.bm.show()
+                    # if click on handle, move handle
+                    elif snapped[2]:
+                        self.mouse_state = "move_handle"
+                        self.clicked_idx = snap_idx[2]
+                        self.bg.move_handle(snap_idx[2], snap_point[2])
+                        self.bm.move_handle(snap_idx[2], snap_point[2])
 
                 # with shift
                 elif bool(modifiers & Qt.ShiftModifier):
@@ -320,19 +326,19 @@ class BezierEditingTool(QgsMapTool):
         if self.mode == "bezier":
             # add anchor and dragging
             if self.mouse_state == "add_anchor":
+                self.canvas.setCursor(self.movehandle_cursor)
                 withAlt = bool(modifiers & Qt.AltModifier)
                 withShift = bool(modifiers & Qt.ShiftModifier)
-                handle_idx, pb = self.bg.move_handle2(
+                other_handle_idx, other_handle_point, anchor_point = self.bg.move_handle2(
                     self.clicked_idx, mouse_point, withAlt, withShift)
                 if withShift:
-                    self.bm.move_handle(handle_idx, pb)
-                    self.bm.move_handle(
-                        handle_idx + 1, self.bg.anchor[self.clicked_idx])
+                    self.bm.move_handle(other_handle_idx, other_handle_point)
+                    self.bm.move_handle(other_handle_idx + 1, anchor_point)
                 elif withAlt:
-                    self.bm.move_handle(handle_idx + 1, mouse_point)
+                    self.bm.move_handle(other_handle_idx + 1, mouse_point)
                 else:
-                    self.bm.move_handle(handle_idx, pb)
-                    self.bm.move_handle(handle_idx + 1, mouse_point)
+                    self.bm.move_handle(other_handle_idx, other_handle_point)
+                    self.bm.move_handle(other_handle_idx + 1, mouse_point)
 
             # insert anchor
             elif self.mouse_state == "insert_anchor":
@@ -354,9 +360,22 @@ class BezierEditingTool(QgsMapTool):
                 self.canvas.setCursor(self.deletehandle_cursor)
             # move handle
             elif self.mouse_state == "move_handle":
+                self.canvas.setCursor(self.movehandle_cursor)
                 point = snap_point[0]
-                self.bg.move_handle(self.clicked_idx, point, undo=False)
-                self.bm.move_handle(self.clicked_idx, point)
+                withAlt = bool(modifiers & Qt.AltModifier)
+                if withAlt:
+                    self.bg.move_handle(self.clicked_idx, point, undo=False)
+                    self.bm.move_handle(self.clicked_idx, point)
+                    other_handle_idx, other_point = self.bg.other_handle(
+                        self.clicked_idx, point)
+                    self.bg.move_handle(
+                        other_handle_idx, other_point, undo=False)
+                    self.bm.move_handle(other_handle_idx, other_point)
+                else:
+
+                    self.bg.move_handle(self.clicked_idx, point, undo=False)
+                    self.bm.move_handle(self.clicked_idx, point)
+
             # move anchor
             elif self.mouse_state == "move_anchor":
                 point = snap_point[0]

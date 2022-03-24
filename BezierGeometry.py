@@ -180,6 +180,17 @@ class BezierGeometry:
                 {"state": "move_handle", "pointidx": idx, "point": point})
         self._moveHandle(idx, point)
 
+    def other_handle(self, handle_idx, point):
+        point = self._trans(point)
+        other_handle_idx = handle_idx + \
+            1 if handle_idx % 2 == 0 else handle_idx - 1
+        anchor_idx = math.floor(handle_idx/2)
+        anchor_point = self.getAnchor(anchor_idx)
+        other_point = QgsPointXY(
+            anchor_point[0] - (point[0] - anchor_point[0]), anchor_point[1] - (point[1] - anchor_point[1]))
+        other_point = self._trans(other_point, revert=True)
+        return other_handle_idx, other_point
+
     def move_handle2(self, anchor_idx, point, fix_first=False, remove_second=False):
         """
         move the handles on both sides of the anchor as you drag the anchor.
@@ -199,7 +210,8 @@ class BezierGeometry:
             self._moveHandle(handle_idx, pb)
             self._moveHandle(handle_idx + 1, point)
         pb = self._trans(pb, revert=True)
-        return handle_idx, pb
+        p = self._trans(p, revert=True)
+        return handle_idx, pb, p
 
     def delete_handle(self, idx, point):
         point = self._trans(point)
