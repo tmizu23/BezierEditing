@@ -343,22 +343,7 @@ class BezierEditingTool(QgsMapTool):
             # insert anchor
             elif self.mouse_state == "insert_anchor":
                 pass
-            # add handle
-            elif bool(modifiers & Qt.AltModifier) and snapped[1] and snapped[2]:
-                self.canvas.setCursor(self.addhandle_cursor)
-            # insert anchor
-            elif bool(modifiers & Qt.AltModifier) and snapped[3] and not snapped[1]:
-                self.canvas.setCursor(self.insertanchor_cursor)
-            # force to add anchor
-            elif bool(modifiers & Qt.ControlModifier) and snapped[1]:
-                self.canvas.setCursor(self.insertanchor_cursor)
-            # delete anchor
-            elif bool(modifiers & Qt.ShiftModifier) and snapped[1]:
-                self.canvas.setCursor(self.deleteanchor_cursor)
-            # delete handle
-            elif bool(modifiers & Qt.ShiftModifier) and snapped[2]:
-                self.canvas.setCursor(self.deletehandle_cursor)
-            # move handle
+                # move handle
             elif self.mouse_state == "move_handle":
                 self.canvas.setCursor(self.movehandle_cursor)
                 point = snap_point[0]
@@ -375,6 +360,21 @@ class BezierEditingTool(QgsMapTool):
 
                     self.bg.move_handle(self.clicked_idx, point, undo=False)
                     self.bm.move_handle(self.clicked_idx, point)
+            # add handle
+            elif bool(modifiers & Qt.AltModifier) and snapped[1] and snapped[2]:
+                self.canvas.setCursor(self.addhandle_cursor)
+            # insert anchor
+            elif bool(modifiers & Qt.AltModifier) and snapped[3] and not snapped[1]:
+                self.canvas.setCursor(self.insertanchor_cursor)
+            # force to add anchor
+            elif bool(modifiers & Qt.ControlModifier) and snapped[1]:
+                self.canvas.setCursor(self.insertanchor_cursor)
+            # delete anchor
+            elif bool(modifiers & Qt.ShiftModifier) and snapped[1]:
+                self.canvas.setCursor(self.deleteanchor_cursor)
+            # delete handle
+            elif bool(modifiers & Qt.ShiftModifier) and snapped[2]:
+                self.canvas.setCursor(self.deletehandle_cursor)
 
             # move anchor
             elif self.mouse_state == "move_anchor":
