@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.2
+ BezierEditing plugin - version 1.3.3
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
@@ -21,6 +21,17 @@ Dependent Python libraries and resources
 
 * [fitCurves](https://github.com/volkerp/fitCurves) for fitting one or more cubic Bezier curves to a polyline.
 * https://github.com/tmizu23/cubic_bezier_curve/blob/master/cubic_bezier_curve.ipynb
+
+
+Change Log
+--------------------------------------------
+    
+Version 1.3.3
+- added support for moving the both handles [drag with alt]
+- added support for fixing the first handle in adding anchor [click & drag with alt]
+- added support for fixing the second handle to the anchor [click & drag with shift]
+- added support for setting the number of interpolations
+- changed to show handles by default
 
 
 License
