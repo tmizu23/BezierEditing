@@ -57,7 +57,7 @@ class BezierEditingTool(QgsMapTool):
         # snap guide line
         self.guide_rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.guide_rbl.setColor(QColor(0, 0, 255, 150))
-        self.guide_rbl.setWidth(0.5)
+        self.guide_rbl.setWidth(1)
         # rectangle selection for unsplit
         self.rubberBand = QgsRubberBand(
             self.canvas, QgsWkbTypes.PolygonGeometry)
