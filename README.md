@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.3
+ BezierEditing plugin - version 1.3.4
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
@@ -25,7 +25,9 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
-    
+Version 1.3.4
+- fix initGui() bug
+
 Version 1.3.3
 - added support for moving the both handles [drag with alt]
 - added support for fixing the first handle in adding anchor [click & drag with alt]
