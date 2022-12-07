@@ -15,19 +15,23 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import *
-from qgis.PyQt.QtGui import *
-from qgis.PyQt.QtWidgets import *
-from qgis.core import *
-from qgis.gui import *
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QSettings, QPointF
+from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument
+from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox
+from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
+from qgis.gui import QgsAttributeEditorContext, QgsMapTool, QgsAttributeDialog, QgsRubberBand, QgsAttributeForm, QgsVertexMarker, QgsHighlight, QgsMapCanvasAnnotationItem
 from .BezierGeometry import *
 from .BezierMarker import *
 import math
 import numpy as np
 import os
+from typing import Dict, Any, List
 
 
 class BezierEditingTool(QgsMapTool):
+
+    sLastUsedValues: Dict[str, Dict[int, Any]] = dict()
 
     def __init__(self, canvas, iface):
         QgsMapTool.__init__(self, canvas)
@@ -664,35 +668,61 @@ class BezierEditingTool(QgsMapTool):
             geom.transform(QgsCoordinateTransform(
                 self.projectCRS, self.layerCRS, QgsProject.instance()))
 
-        f = QgsFeature()
-        fields = layer.fields()
-        f.setFields(fields)
-        f.setGeometry(geom)
-        # add attribute fields to feature
+        qgsSettingsRegistry = QgsSettingsRegistryCore()
+        initialAttributeValues = dict()
+        reuseLastValues = False
+        defaultAttributeValues: dict = {}
+        entry = qgsSettingsRegistry.settingsEntry(
+            'qgis/digitizing/reuseLastValues')
+        if isinstance(entry, QgsSettingsEntryBool):
+            reuseLastValues = entry.value()
 
-        if feature is not None:
-            for i in range(fields.count()):
-                f.setAttribute(i, feature.attributes()[i])
+        lyr: QgsVectorLayer = layer
+        for idx in range(lyr.fields().count()):
 
-        settings = QSettings()
-        disable_attributes = settings.value(
-            "/qgis/digitizing/disable_enter_attribute_values_dialog", False, type=bool)
+            if idx in defaultAttributeValues.keys():
+                initialAttributeValues[idx] = defaultAttributeValues[idx]
+            elif (reuseLastValues or lyr.editFormConfig().reuseLastValue(idx)) and \
+                    layer.id() in self.sLastUsedValues.keys() and \
+                    idx in self.sLastUsedValues[lyr.id()].keys():
+
+                lastUsed = self.sLastUsedValues[lyr.id()][idx]
+                """
+                // Only set initial attribute value if it's different from the default clause or we may trigger
+                // unique constraint checks for no reason, see https://github.com/qgis/QGIS/issues/42909
+                """
+                if lyr.dataProvider() and lyr.dataProvider().defaultValueClause(idx) != lastUsed:
+                    initialAttributeValues[idx] = lastUsed
+
+        context = layer.createExpressionContext()
+        f = QgsVectorLayerUtils.createFeature(
+            layer, geom, initialAttributeValues, context)
+        newFeature = QgsFeature(f)
+
+        disable_attributes = False
+        entry = qgsSettingsRegistry.settingsEntry(
+            'qgis/digitizing/disable_enter_attribute_values_dialog')
+        if isinstance(entry, QgsSettingsEntryBool):
+            disable_attributes = entry.value()
+
         if disable_attributes or showdlg is False:
             if not editmode:
                 layer.beginEditCommand("Bezier added")
-                layer.addFeature(f)
+                layer.addFeature(newFeature)
             else:
                 # if using changeGeometry function, crashed... it's bug? So using add and delete
                 layer.beginEditCommand("Bezier edited")
-                layer.addFeature(f)
+                layer.addFeature(newFeature)
                 layer.deleteFeature(feature.id())
             layer.endEditCommand()
         else:
             if not editmode:
-                dlg = QgsAttributeDialog(layer, f, True)
-                dlg.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+                dlg = QgsAttributeDialog(layer, newFeature, True)
+                dlg.setAttribute(Qt.WA_DeleteOnClose)
                 dlg.setMode(QgsAttributeEditorContext.AddFeatureMode)
                 dlg.setEditCommandMessage("Bezier added")
+                dlg.attributeForm().featureSaved.connect(
+                    lambda f, form=dlg.attributeForm(): self.onFeatureSaved(f, form))
                 ok = dlg.exec_()
                 if not ok:
                     reply = QMessageBox.question(None, "Question", self.tr(u"Do you want to continue editing?"),
@@ -702,11 +732,11 @@ class BezierEditingTool(QgsMapTool):
                         continueFlag = True
             else:
                 layer.beginEditCommand("Bezier edited")
-                f = feature
-                dlg = self.iface.getFeatureForm(layer, f)
+                newFeature = feature
+                dlg = self.iface.getFeatureForm(layer, newFeature)
                 ok = dlg.exec_()
                 if ok:
-                    layer.changeGeometry(f.id(), geom)
+                    layer.changeGeometry(newFeature.id(), geom)
                     layer.endEditCommand()
                 else:
                     layer.destroyEditCommand()
@@ -716,7 +746,31 @@ class BezierEditingTool(QgsMapTool):
                     if reply == QMessageBox.Yes:
                         continueFlag = True
 
-        return f, continueFlag
+        return newFeature, continueFlag
+
+    def onFeatureSaved(self, feature: QgsFeature, form: QgsAttributeForm):
+        form = self.sender()
+        if not isinstance(form, QgsAttributeForm):
+            return
+
+        qgsSettingsRegistry = QgsSettingsRegistryCore()
+
+        reuseLastValues = False
+        entry = qgsSettingsRegistry.settingsEntry(
+            'qgis/digitizing/reuseLastValues')
+        if isinstance(entry, QgsSettingsEntryBool):
+            reuseLastValues = entry.value()
+
+        lyr = self.canvas.currentLayer()
+
+        if reuseLastValues:
+            fields = lyr.fields()
+            origValues: Dict[int, Any] = self.sLastUsedValues.get(
+                lyr.id(), dict())
+            newValues: List = feature.attributes()
+            for idx in range(fields.count()):
+                origValues[idx] = newValues[idx]
+            self.sLastUsedValues[lyr.id()] = origValues
 
     def undo(self):
         """
