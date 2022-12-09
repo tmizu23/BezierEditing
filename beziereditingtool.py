@@ -18,14 +18,13 @@
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QSettings, QPointF
 from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument
-from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox
-from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
+from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox, QPushButton
+from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsApplication, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
 from qgis.gui import QgsAttributeEditorContext, QgsMapTool, QgsAttributeDialog, QgsRubberBand, QgsAttributeForm, QgsVertexMarker, QgsHighlight, QgsMapCanvasAnnotationItem
 from .BezierGeometry import *
 from .BezierMarker import *
 import math
 import numpy as np
-import os
 from typing import Dict, Any, List
 
 
@@ -35,12 +34,6 @@ class BezierEditingTool(QgsMapTool):
 
     def __init__(self, canvas, iface):
         QgsMapTool.__init__(self, canvas)
-
-        # translation
-        self.translator = QTranslator()
-        self.translator.load(
-            os.path.dirname(os.path.abspath(__file__)) + "/i18n/" + QLocale.system().name()[0:2] + ".qm")
-        QApplication.installTranslator(self.translator)
 
         # qgis interface
         self.iface = iface
@@ -118,7 +111,7 @@ class BezierEditingTool(QgsMapTool):
     def crsChanged(self):
         if self.bg is not None:
             self.iface.messageBar().pushMessage(
-                "Warning", "Reset editing data", level=Qgis.Warning)
+                self.tr("Warning"), self.tr("Reset editing data"), level=Qgis.Warning)
             self.resetEditing()
         self.checkCRS()
 
@@ -299,11 +292,11 @@ class BezierEditingTool(QgsMapTool):
                         self.resetEditing()
 
                     else:
-                        QMessageBox.warning(None, "Warning", self.tr(
-                            u"The layer geometry type is different."))
+                        QMessageBox.warning(None, self.tr("Geometry type is different"), self.tr(
+                            "Only line geometry can be split."))
                 else:
                     QMessageBox.warning(
-                        None, "Warning", self.tr(u"No feature to split."))
+                        None, self.tr("No feature"), self.tr("No feature to split."))
         # unsplit tool
         elif self.mode == "unsplit":
             # if right click, selected bezier feature are unsplit
@@ -518,8 +511,8 @@ class BezierEditingTool(QgsMapTool):
             continueFlag = False
         # the layer geometry type is different
         elif result is False:
-            reply = QMessageBox.question(None, "Question", self.tr(
-                u"The layer geometry type is different. Or polygon isn't close. Do you want to continue editing?"), QMessageBox.Yes,
+            reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr(
+                "Geometry type of the layer is different, or polygon isn't closed. Do you want to continue editing?"), QMessageBox.Yes,
                 QMessageBox.No)
             if reply == QMessageBox.Yes:
                 continueFlag = True
@@ -534,9 +527,9 @@ class BezierEditingTool(QgsMapTool):
             else:
                 feature = self.getFeatureById(layer, self.editing_feature_id)
                 if feature is None:
-                    reply = QMessageBox.question(None, "Question",
+                    reply = QMessageBox.question(None, self.tr("No feature"),
                                                  self.tr(
-                                                     u"No feature. Do you want to continue editing?"),
+                                                     "No feature found. Do you want to continue editing?"),
                                                  QMessageBox.Yes,
                                                  QMessageBox.No)
                     if reply == QMessageBox.Yes:
@@ -585,6 +578,19 @@ class BezierEditingTool(QgsMapTool):
             geom.transform(QgsCoordinateTransform(
                 self.layerCRS, self.projectCRS, QgsProject.instance()))
 
+        button_line = QPushButton(QIcon(QgsApplication.getThemeIcon("/mIconLineLayer.svg")), self.tr("Line"))
+        button_curve = QPushButton(QIcon(QgsApplication.getThemeIcon("/mActionDigitizeWithCurve.svg")), self.tr("Curve"))
+        msgbox_convert = QMessageBox()
+        msgbox_convert.setWindowTitle(self.tr("Convert to Bezier"))
+        msgbox_convert.setIcon(QMessageBox.Question)
+        msgbox_convert.setText(self.tr(
+            "The feature isn't created by Bezier Tool or ver 1.3 higher.\n\n" +
+            "Do you want to convert to Bezier?\n\n" +
+            "Conversion can be done either to line segments or to fitting curve.\nPlease select conversion mode."))
+        msgbox_convert.addButton(button_line, QMessageBox.ApplyRole)
+        msgbox_convert.addButton(button_curve, QMessageBox.ApplyRole)
+        msgbox_button_cancel = msgbox_convert.addButton(QMessageBox.Cancel)
+
         if geom.type() == QgsWkbTypes.PointGeometry:
             point = geom.asPoint()
             self.bg = BezierGeometry.convertPointToBezier(
@@ -603,20 +609,13 @@ class BezierEditingTool(QgsMapTool):
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
             else:
-                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?"),
-                                             QMessageBox.Yes,
-                                             QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    linetype_reply = QMessageBox.question(None, "Question", self.tr(
-                        u"How to convert? Yes--> by Line, No--> by fitting Curve"),
-                        QMessageBox.Yes,
-                        QMessageBox.No)
-                    if linetype_reply == QMessageBox.Yes:
+                msgbox_convert.exec()
+                if msgbox_convert.clickedButton() != msgbox_button_cancel:
+                    if msgbox_convert.clickedButton() == button_line:
                         linetype = "line"
-                    else:
+                    elif msgbox_convert.clickedButton() == button_curve:
                         linetype = "curve"
-                    self.bg = BezierGeometry.convertLineToBezier(
-                        self.projectCRS, polyline, linetype)
+                    self.bg = BezierGeometry.convertLineToBezier(self.projectCRS, polyline, linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
                     geom_type = geom.type()
@@ -633,17 +632,11 @@ class BezierEditingTool(QgsMapTool):
                 self.bm.show(self.show_handle)
                 geom_type = geom.type()
             else:
-                reply = QMessageBox.question(None, "Question", self.tr(u"The feature isn't created by bezier tool or ver 1.3 higher. Do you want to convert to bezier?"),
-                                             QMessageBox.Yes,
-                                             QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    linetype_reply = QMessageBox.question(None, "Question", self.tr(
-                        u"How to convert? Yes--> by Line, No-->by fitting Curve"),
-                        QMessageBox.Yes,
-                        QMessageBox.No)
-                    if linetype_reply == QMessageBox.Yes:
+                msgbox_convert.exec()
+                if msgbox_convert.clickedButton() != msgbox_button_cancel:
+                    if msgbox_convert.clickedButton() == button_line:
                         linetype = "line"
-                    else:
+                    elif msgbox_convert.clickedButton() == button_curve:
                         linetype = "curve"
                     self.bg = BezierGeometry.convertLineToBezier(
                         self.projectCRS, polygon[0], linetype)
@@ -652,8 +645,7 @@ class BezierEditingTool(QgsMapTool):
                     geom_type = geom.type()
 
         else:
-            QMessageBox.warning(None, "Warning", self.tr(
-                u"The layer geometry type doesn't support."))
+            QMessageBox.warning(None, self.tr("Not supported type"), self.tr("Geometry type of the layer is not supported."))
 
         return geom_type
 
@@ -707,11 +699,11 @@ class BezierEditingTool(QgsMapTool):
 
         if disable_attributes or showdlg is False:
             if not editmode:
-                layer.beginEditCommand("Bezier added")
+                layer.beginEditCommand(self.tr("Bezier added"))
                 layer.addFeature(newFeature)
             else:
                 # if using changeGeometry function, crashed... it's bug? So using add and delete
-                layer.beginEditCommand("Bezier edited")
+                layer.beginEditCommand(self.tr("Bezier edited"))
                 layer.addFeature(newFeature)
                 layer.deleteFeature(feature.id())
             layer.endEditCommand()
@@ -720,12 +712,12 @@ class BezierEditingTool(QgsMapTool):
                 dlg = QgsAttributeDialog(layer, newFeature, True)
                 dlg.setAttribute(Qt.WA_DeleteOnClose)
                 dlg.setMode(QgsAttributeEditorContext.AddFeatureMode)
-                dlg.setEditCommandMessage("Bezier added")
+                dlg.setEditCommandMessage(self.tr("Bezier added"))
                 dlg.attributeForm().featureSaved.connect(
                     lambda f, form=dlg.attributeForm(): self.onFeatureSaved(f, form))
                 ok = dlg.exec_()
                 if not ok:
-                    reply = QMessageBox.question(None, "Question", self.tr(u"Do you want to continue editing?"),
+                    reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr("Do you want to continue editing?"),
                                                  QMessageBox.Yes,
                                                  QMessageBox.No)
                     if reply == QMessageBox.Yes:
@@ -740,7 +732,7 @@ class BezierEditingTool(QgsMapTool):
                     layer.endEditCommand()
                 else:
                     layer.destroyEditCommand()
-                    reply = QMessageBox.question(None, "Question", self.tr(u"Do you want to continue editing?"),
+                    reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr("Do you want to continue editing?"),
                                                  QMessageBox.Yes,
                                                  QMessageBox.No)
                     if reply == QMessageBox.Yes:
@@ -848,23 +840,23 @@ class BezierEditingTool(QgsMapTool):
 
     def generate_menu(self):
         self.menu = QMenu()
-        self.menu.addAction(self.tr(u"guide setting...")
+        self.menu.addAction(self.tr("Guide settings…")
                             ).triggered.connect(self.guide_snap_setting)
-        self.menu.addAction(self.tr("reset guide")
+        self.menu.addAction(self.tr("Reset guide")
                             ).triggered.connect(self.clear_guide)
         self.menu.addSeparator()
-        self.menu.addAction(self.tr(u"other settings...")
+        self.menu.addAction(self.tr("Advanced settings…")
                             ).triggered.connect(self.interpolate_setting)
         self.menu.addSeparator()
-        self.closeAction = self.menu.addAction(self.tr(u"Close"))
+        self.closeAction = self.menu.addAction(self.tr("Close"))
 
     def guide_snap_setting(self):
-        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Angle"), self.tr(
-            u"Enter Snap Angle (degree)"), self.snapToAngleUnit, 0, 90)
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr("Set snap to angle"), self.tr(
+            "Enter snap angle (degree)"), self.snapToAngleUnit, 0, 90)
         if ok:
             self.snapToAngleUnit = num
-        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Length"), self.tr(
-            u"Enter Snap Length (if latlon, enter the unit by second)"), self.snapToLengthUnit, 0)
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr("Set snap to length"), self.tr(
+            "Enter snap length (in case of LatLon in seconds)"), self.snapToLengthUnit, 0)
         if ok:
             if self.projectCRS.projectionAcronym() == "longlat":
                 self.snapToLengthUnit = num/3600
@@ -878,13 +870,13 @@ class BezierEditingTool(QgsMapTool):
     def interpolate_setting(self):
         if self.bg is not None:
             QMessageBox.warning(
-                None, "Warning", self.tr(u"Can't be set while editing."))
+                None, self.tr("Warning"), self.tr("Can't be set while editing."))
             return
 
         QMessageBox.warning(
-            None, "Warning", self.tr(u"Be careful when changing values, as Bezier curves with different numbers of interpolants will not be converted accurately."))
-        num, ok = QInputDialog.getInt(QInputDialog(), self.tr(u"Count"), self.tr(
-            u"Enter Interpolate Point Count (default 10)"), BezierGeometry.INTERPOLATION, 5, 99)
+            None, self.tr("Warning"), self.tr("Be careful when changing values, as Bezier curves with different numbers of interpolants will not be converted accurately."))
+        num, ok = QInputDialog.getInt(QInputDialog(), self.tr("Count"), self.tr(
+            "Enter Interpolate Point Count (default is 10)"), BezierGeometry.INTERPOLATION, 5, 99)
         if ok:
             BezierGeometry.INTERPOLATION = num
             s = QgsSettings()
@@ -977,11 +969,11 @@ class BezierEditingTool(QgsMapTool):
                 guide_point = guide_point
                 guide_length = org_length
 
-        angle_text = u"{:.1f}°".format(guide_deg)
+        angle_text = "{:.1f}°".format(guide_deg)
         gl = self.guideLabel(angle_text, origin_point1, snapped_angle)
         self.guideLabelGroup.addToGroup(gl)
         if self.projectCRS.projectionAcronym() == "longlat":
-            length_text = u"{:.1f}″".format(guide_length*3600)
+            length_text = "{:.1f}″".format(guide_length*3600)
         else:
             length_text = "{:.1f}m".format(guide_length)
         gl = self.guideLabel(length_text, origin_point1 +
@@ -1189,7 +1181,7 @@ class BezierEditingTool(QgsMapTool):
                 elif layer.wkbType() == QgsWkbTypes.MultiLineString:
                     geom = QgsGeometry.fromMultiPolylineXY([line])
 
-                layer.beginEditCommand("Bezier unsplit")
+                layer.beginEditCommand(self.tr("Bezier unsplit"))
                 settings = QSettings()
                 disable_attributes = settings.value("/qgis/digitizing/disable_enter_attribute_values_dialog", False,
                                                     type=bool)
@@ -1208,10 +1200,10 @@ class BezierEditingTool(QgsMapTool):
                 self.canvas.refresh()
             else:
                 QMessageBox.warning(
-                    None, "Warning", self.tr(u"Select two features."))
+                    None, self.tr("Warning"), self.tr("Select exactly two feature."))
         else:
             QMessageBox.warning(
-                None, "Warning", self.tr(u"Select Line Layer."))
+                None, self.tr("Warning"), self.tr("Select a line Layer."))
 
     def activate(self):
         self.canvas.setCursor(self.addanchor_cursor)
@@ -1239,4 +1231,4 @@ class BezierEditingTool(QgsMapTool):
         pass
 
     def log(self, msg):
-        QgsMessageLog.logMessage(msg, 'MyPlugin', Qgis.Info)
+        QgsMessageLog.logMessage(msg, 'BezierEditing', Qgis.Info)
