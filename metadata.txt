@@ -3,7 +3,7 @@
 name=Bezier Editing
 qgisMinimumVersion=3.0
 description=Bezier curve and freehand digitizing tools. You can also use a tablet pen.
-about=This plugin digitize the features using Bezier curves. You can create Bezier curve by plotting anchors and handles. You can also draw Bezier curves freehand and use a tablet pen.
+about=This plugin digitizes features using Bezier curves. You can create Bezier curve by plotting anchors and handles. You can also draw Bezier curves freehand and use a tablet pen.
 category=Vector
 version=version 1.3.5
 author=Takayuki Mizutani
