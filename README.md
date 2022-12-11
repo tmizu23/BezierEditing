@@ -40,6 +40,19 @@ Version 1.3.3
 - changed to show handles by default
 
 
+Contribution
+=======
+
+Translation
+--------------------------------------------
+
+* Open bezierediting.pro and add bezierediting_{lang}.ts to the TRANSLATION section. {lang} must be a two letter language code.
+* Run `pylupdate5 bezierediting.pro` which generates the translation files. On debian, you can install pylupdate `apt install pyqt5-dev-tools`.
+* Open the newly generated .ts in i18n directory with QtLinguist or a text editor and do the translation.
+* When ready, generate qm file with `lrelease bezierediting.pro`.
+* (optional) To test, copy the .qm file to the plugins folder in your QGIS install (on Linux _~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/BezierEditing/i18n_) and start QGIS.
+* Create pull request on GitHub or send the .ts file.
+
 License
 =======
 
