@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.5
+ BezierEditing plugin - version 1.3.6
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
@@ -25,6 +25,12 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.3.6
+- added Hungarian translation contributed by @BathoryPeter
+- added detailed tooltip for Bezier Edit button
+- Rewording messages
+- fixed unsplit bug on mac
+
 Version 1.3.5
 - added support for reuse last value
 - fixed autofill of fid
