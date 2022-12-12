@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0" language="ja_JP" sourcelanguage="">
+<!DOCTYPE TS>
+<TS version="2.1" language="ja_JP">
 <context>
     <name>BezierEditing</name>
     <message>
@@ -92,9 +93,9 @@ Ctrl + 右クリックでメニューを表示</translation>
 - Drag to draw a line&lt;br&gt;
 - Retrace a segment and the line will be modified&lt;br&gt;
 - Right click to commit feature / enter edit mode again</source>
-        <translation>&lt;b&gt;ベジエ曲線をフリーハンドで編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-- ドラッグで線を書く&lt;br&gt;
-- なぞり直すとラインが修正される&lt;br&gt;
+        <translation type="unfinished">&lt;b&gt;ベジエ曲線をフリーハンドで編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;
+- ドラッグでラインを書く&lt;br&gt;
+- ラインをなぞり直すと修正される&lt;br&gt;
 - 右クリックで編集の確定／編集の再開</translation>
     </message>
     <message>
