@@ -50,7 +50,6 @@ class BezierEditing(object):
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
 
-
     def initGui(self):
         # Init the tool
         self.beziertool = BezierEditingTool(self.canvas, self.iface)
@@ -76,7 +75,7 @@ class BezierEditing(object):
         self.bezier_edit.setEnabled(False)
         self.bezier_edit.setCheckable(True)
         self.bezier_edit.setText(self.tr(
-"""<b>Bezier Edit</b><br><br>
+            """<b>Bezier Edit</b><br><br>
 Click to add anchor
 <dd> • click&&drag: add curved anchor (with two hanles)</dd>
 <dd> • click&&drag+shift: add anchor moving only backward handle</dd>
@@ -105,7 +104,7 @@ Shift + right click shows context menu.""".replace("\n", "")
         self.freehand.setEnabled(False)
         self.freehand.setCheckable(True)
         self.freehand.setText(self.tr(
-"""<b>Edit Bezier Freehand</b><br><br>
+            """<b>Edit Bezier Freehand</b><br><br>
 - Drag to draw a line<br>
 - Retrace a segment and the line will be modified<br>
 - Right click to commit feature / enter edit mode again""".replace("\n", "")
@@ -129,7 +128,7 @@ Shift + right click shows context menu.""".replace("\n", "")
         self.unsplit.setEnabled(False)
         self.unsplit.setCheckable(True)
         self.unsplit.setText(self.tr(
-"""<b>Merge Bezier Curves</b><br><br>
+            """<b>Merge Bezier Curves</b><br><br>
 1. Click or click&&drag to select features<br>
 2. Right click to merge.""".replace("\n", "")
         ))
@@ -162,6 +161,7 @@ Shift + right click shows context menu.""".replace("\n", "")
         self.canvas.mapToolSet.connect(self.maptoolChanged)
 
         self.currentTool = None
+        self.toggle()
 
     def tr(self, message):
         return QCoreApplication.translate('BezierEditing', message)
