@@ -847,12 +847,12 @@ class BezierEditingTool(QgsMapTool):
 
     def generate_menu(self):
         self.menu = QMenu()
-        self.menu.addAction(self.tr("Guide settings…")
+        self.menu.addAction(self.tr("Guide settings...")
                             ).triggered.connect(self.guide_snap_setting)
         self.menu.addAction(self.tr("Reset guide")
                             ).triggered.connect(self.clear_guide)
         self.menu.addSeparator()
-        self.menu.addAction(self.tr("Advanced settings…")
+        self.menu.addAction(self.tr("Advanced settings...")
                             ).triggered.connect(self.interpolate_setting)
         self.menu.addSeparator()
         self.closeAction = self.menu.addAction(self.tr("Close"))
