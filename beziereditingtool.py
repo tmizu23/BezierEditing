@@ -299,11 +299,8 @@ class BezierEditingTool(QgsMapTool):
                         None, self.tr("No feature"), self.tr("No feature to split."))
         # unsplit tool
         elif self.mode == "unsplit":
-            # if right click, selected bezier feature are unsplit
-            if event.button() == Qt.RightButton:
-                self.unsplit()
             # if left click, feature selection
-            elif event.button() == Qt.LeftButton:
+            if event.button() == Qt.LeftButton:
                 self.endPoint = self.startPoint = mouse_point
                 self.isEmittingPoint = True
                 self.showRect(self.startPoint, self.endPoint)
@@ -478,6 +475,9 @@ class BezierEditingTool(QgsMapTool):
                     ok = self.startEditing(layer, mouse_point)
                     if ok:
                         self.editing = True
+            # if right click, selected bezier feature are unsplit
+            elif self.mode == "unsplit":
+                self.unsplit()
 
     def startEditing(self, layer, mouse_point):
         """
@@ -578,8 +578,10 @@ class BezierEditingTool(QgsMapTool):
             geom.transform(QgsCoordinateTransform(
                 self.layerCRS, self.projectCRS, QgsProject.instance()))
 
-        button_line = QPushButton(QIcon(QgsApplication.getThemeIcon("/mIconLineLayer.svg")), self.tr("Line"))
-        button_curve = QPushButton(QIcon(QgsApplication.getThemeIcon("/mActionDigitizeWithCurve.svg")), self.tr("Curve"))
+        button_line = QPushButton(
+            QIcon(QgsApplication.getThemeIcon("/mIconLineLayer.svg")), self.tr("Line"))
+        button_curve = QPushButton(QIcon(QgsApplication.getThemeIcon(
+            "/mActionDigitizeWithCurve.svg")), self.tr("Curve"))
         msgbox_convert = QMessageBox()
         msgbox_convert.setWindowTitle(self.tr("Convert to Bezier"))
         msgbox_convert.setIcon(QMessageBox.Question)
@@ -615,7 +617,8 @@ class BezierEditingTool(QgsMapTool):
                         linetype = "line"
                     elif msgbox_convert.clickedButton() == button_curve:
                         linetype = "curve"
-                    self.bg = BezierGeometry.convertLineToBezier(self.projectCRS, polyline, linetype)
+                    self.bg = BezierGeometry.convertLineToBezier(
+                        self.projectCRS, polyline, linetype)
                     self.bm = BezierMarker(self.canvas, self.bg)
                     self.bm.show(self.show_handle)
                     geom_type = geom.type()
@@ -645,7 +648,8 @@ class BezierEditingTool(QgsMapTool):
                     geom_type = geom.type()
 
         else:
-            QMessageBox.warning(None, self.tr("Not supported type"), self.tr("Geometry type of the layer is not supported."))
+            QMessageBox.warning(None, self.tr("Not supported type"), self.tr(
+                "Geometry type of the layer is not supported."))
 
         return geom_type
 
