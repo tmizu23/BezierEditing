@@ -77,22 +77,22 @@ class BezierEditing(object):
         self.bezier_edit.setText(self.tr(
             """<b>Bezier Edit</b><br><br>
 Click to add anchor
-<dd> • click&&drag: add curved anchor (with two hanles)</dd>
-<dd> • click&&drag+shift: add anchor moving only backward handle</dd>
-<dd> • click&&drag+alt: add anchor without forward handle</dd>
+<dd>- click&&drag: add curved anchor (with two hanles)</dd>
+<dd>- click&&drag+Alt: add anchor moving only backward handle</dd>
+<dd>- click&&drag+Shift: add anchor without forward handle</dd>
 Right click to commit feature<br>
 Ctrl shows guide<br>
 On feature:
-<dd> • Right click to enter drawing mode again</dd>
-<dd> • Alt+click inserts anchor</dd>
+<dd>- Right click to enter drawing mode again</dd>
+<dd>- Alt+click inserts anchor</dd>
 On anchor:
-<dd> • Alt+click pulls handle from anchor</dd>
-<dd> • Shift+click deletes anchor</dd>
+<dd>- Alt+click pulls handle from anchor</dd>
+<dd>- Shift+click deletes anchor</dd>
 On handle:
-<dd> • Alt+drag moves both handles</dd>
-<dd> • Shift+click deletes handle</dd>
+<dd>- Alt+drag moves both handles</dd>
+<dd>- Shift+click deletes handle</dd>
 On first anchor, right click to flip Bezier direction.<br>
-Shift + right click shows context menu.""".replace("\n", "")
+Ctrl + right click shows context menu."""
         ))
         self.bezier_edit.triggered.connect(self.bezierediting)
         self.toolbar.addAction(self.bezier_edit)
@@ -107,7 +107,7 @@ Shift + right click shows context menu.""".replace("\n", "")
             """<b>Edit Bezier Freehand</b><br><br>
 - Drag to draw a line<br>
 - Retrace a segment and the line will be modified<br>
-- Right click to commit feature / enter edit mode again""".replace("\n", "")
+- Right click to commit feature / enter edit mode again"""
         ))
         self.freehand.triggered.connect(self.freehandediting)
         self.toolbar.addAction(self.freehand)
@@ -130,7 +130,7 @@ Shift + right click shows context menu.""".replace("\n", "")
         self.unsplit.setText(self.tr(
             """<b>Merge Bezier Curves</b><br><br>
 1. Click or click&&drag to select features<br>
-2. Right click to merge.""".replace("\n", "")
+2. Right click to merge."""
         ))
         self.unsplit.triggered.connect(self.unspliting)
         self.toolbar.addAction(self.unsplit)
