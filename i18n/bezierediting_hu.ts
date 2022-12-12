@@ -68,24 +68,7 @@ On handle:
 &lt;dd&gt;- Shift+click deletes handle&lt;/dd&gt;
 On first anchor, right click to flip Bezier direction.&lt;br&gt;
 Ctrl + right click shows context menu.</source>
-        <translation>&lt;b&gt;Bézier-görbe szerkesztése&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-Kattintson egy csomópont hozzáadásához
-&lt;dd&gt;- kattintás&amp;&amp;húzás: íves csomópont hozzáadása(két fogantyúval)&lt;/dd&gt;
-&lt;dd&gt;- kattingás&amp;&amp;húzás+Alt: csomópont hozzáadása csak hátra irányú fogantyút mozgatva&lt;/dd&gt;
-&lt;dd&gt;- kattintás&amp;&amp;húzás+Shift: előre irányú fogantyú nélküli csomópont hozzáadása&lt;/dd&gt;
-Jobb kattintással véglegesítheti az elemet&lt;br&gt;
-Ctrl megjeleníti a segédvonalat&lt;br&gt;
-Elemen:
-&lt;dd&gt;- Jobb kattintással újra szerkesztő módba léphet&lt;/dd&gt;
-&lt;dd&gt;- Alt+kattintás csomópontot szúr be&lt;/dd&gt;
-Csomóponton:
-&lt;dd&gt;- Alt+kattintás új fogantyút húz ki a csomópontból&lt;/dd&gt;
-&lt;dd&gt;- Shift+kattintás törli a csomópontot&lt;/dd&gt;
-Fogantyún:
-&lt;dd&gt;- Alt+húzás mindkét fogantyút mozgatja&lt;/dd&gt;
-&lt;dd&gt;- Shift+kattintás törli a fogantyút&lt;/dd&gt;
-Jobb kattintás az első csomópontra megfirdítja a Bézier rajzolásának irányát.&lt;br&gt;
-Ctrl + jobb kattintás megnyitja a helyi menüt.</translation>
+        <translation type="unfinished">&lt;b&gt;Bézier-görbe szerkesztése&lt;/b&gt;&lt;br&gt;&lt;br&gt;Kattintson egy csomópont hozzáadásához&lt;dd&gt;- kattintás&amp;&amp;húzás: íves csomópont hozzáadása(két fogantyúval)&lt;/dd&gt;&lt;dd&gt;- kattingás&amp;&amp;húzás+Alt: csomópont hozzáadása csak hátra irányú fogantyút mozgatva&lt;/dd&gt;&lt;dd&gt;- kattintás&amp;&amp;húzás+Shift: előre irányú fogantyú nélkülicsomópont hozzáadása&lt;/dd&gt;Jobb kattintással véglegesítheti az elemet&lt;br&gt;Ctrl megjeleníti a segédvonalat&lt;br&gt;Elemen:&lt;dd&gt;- Jobb kattintással újraszerkesztő módba léphet&lt;/dd&gt;&lt;dd&gt;- Alt+kattintás csomópontot szúr be&lt;/dd&gt;Csomóponton:&lt;dd&gt;- Alt+kattintás új fogantyút húz ki a csomópontból&lt;/dd&gt;&lt;dd&gt;- Shift+kattintás törli a csomópontot&lt;/dd&gt;Fogantyún:&lt;dd&gt;- Alt+húzás mindkét fogantyút mozgatja&lt;/dd&gt;&lt;dd&gt;- Shift+kattintás törli a fogantyút&lt;/dd&gt;Jobb kattintás az első csomópontra megfirdítja a Bézier rajzolásának irányát.&lt;br&gt;Ctrl + jobb kattintás megnyitja a helyi menüt.</translation>
     </message>
     <message>
         <location filename="../bezierediting.py" line="106"/>
@@ -93,19 +76,14 @@ Ctrl + jobb kattintás megnyitja a helyi menüt.</translation>
 - Drag to draw a line&lt;br&gt;
 - Retrace a segment and the line will be modified&lt;br&gt;
 - Right click to commit feature / enter edit mode again</source>
-        <translation>&lt;b&gt;Bézier-görbe szerkesztése szabadkézzel&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-- Vonal rajzolásához húzza a kurzort&lt;br&gt;
-- Egy vonalszakaszt újra átrajzolva módosíthatja a vonalat&lt;br&gt;
-- Jobb kattintással véglegesítheti az elemet / újra beléphet a szerkesztő módba</translation>
+        <translation>&lt;b&gt;Bézier-görbe szerkesztése szabadkézzel&lt;/b&gt;&lt;br&gt;&lt;br&gt;- Vonal rajzolásához húzza a kurzort&lt;br&gt;- Egy vonalszakaszt újra átrajzolva módosíthatja a vonalat&lt;br&gt;- Jobb kattintással véglegesítheti az elemet / újra beléphet a szerkesztő módba</translation>
     </message>
     <message>
         <location filename="../bezierediting.py" line="130"/>
         <source>&lt;b&gt;Merge Bezier Curves&lt;/b&gt;&lt;br&gt;&lt;br&gt;
 1. Click or click&amp;&amp;drag to select features&lt;br&gt;
 2. Right click to merge.</source>
-        <translation>&lt;b&gt;Bézier-görbék egyesítése&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-1. Kattintson vagy kattintson és húzza a kurzort az elemek kiválasztásához&lt;br&gt;
-2. Egyesítse őke jobb kattintással.</translation>
+        <translation>&lt;b&gt;Bézier-görbék egyesítése&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Kattintson vagy kattintson és húzza a kurzort az elemek kiválasztásához&lt;br&gt;2. Egyesítse őke jobb kattintással.</translation>
     </message>
 </context>
 <context>

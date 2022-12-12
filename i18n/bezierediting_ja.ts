@@ -68,24 +68,7 @@ On handle:
 &lt;dd&gt;- Shift+click deletes handle&lt;/dd&gt;
 On first anchor, right click to flip Bezier direction.&lt;br&gt;
 Ctrl + right click shows context menu.</source>
-        <translation>&lt;b&gt;ベジエ曲線を編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-クリックでアンカーを追加
-&lt;dd&gt;- クリック&amp;&amp;ドラッグ: アンカーを追加 (両側のハンドルを移動)&lt;/dd&gt;
-&lt;dd&gt;- クリック&amp;&amp;ドラッグ+Shift: アンカーを追加して次のハンドルは削除&lt;/dd&gt;
-&lt;dd&gt;- クリック&amp;&amp;ドラッグ+Alt: アンカーを追加して次のハンドルのみ移動&lt;/dd&gt;
-右クリックでフィーチャーを確定&lt;br&gt;
-Ctrlでガイドを表示&lt;br&gt;
-フィーチャー上で:
-&lt;dd&gt;- 右クリック編集の再開&lt;/dd&gt;
-&lt;dd&gt;- Alt+クリック: アンカーの挿入&lt;/dd&gt;
-アンカー上で:
-&lt;dd&gt;- Alt+クリック: アンカーからハンドルを引き出す&lt;/dd&gt;
-&lt;dd&gt;- Shift+クリック: アンカーを削除&lt;/dd&gt;
-ハンドル上で:
-&lt;dd&gt;- Alt+ドラッグ: 両側のハンドルを移動&lt;/dd&gt;
-&lt;dd&gt;- Shift+クリック: ハンドルを削除&lt;/dd&gt;
-始点のアンカーを右クリックで始点を反対にする&lt;br&gt;
-Ctrl + 右クリックでメニューを表示</translation>
+        <translation>&lt;b&gt;ベジエ曲線を編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;クリックでアンカーを追加&lt;dd&gt;- クリック&amp;&amp;ドラッグ: アンカーを追加 (両側のハンドルを移動)&lt;/dd&gt;&lt;dd&gt;- クリック&amp;&amp;ドラッグ+Shift: アンカーを追加して次のハンドルは削除&lt;/dd&gt;&lt;dd&gt;- クリック&amp;&amp;ドラッグ+Alt: アンカーを追加して次のハンドルのみ移動&lt;/dd&gt;右クリックでフィーチャーを確定&lt;br&gt;Ctrlでガイドを表示&lt;br&gt;フィーチャー上で:&lt;dd&gt;- 右クリック編集の再開&lt;/dd&gt;&lt;dd&gt;- Alt+クリック: アンカーの挿入&lt;/dd&gt;アンカー上で:&lt;dd&gt;- Alt+クリック: アンカーからハンドルを引き出す&lt;/dd&gt;&lt;dd&gt;- Shift+クリック: アンカーを削除&lt;/dd&gt;ハンドル上で:&lt;dd&gt;- Alt+ドラッグ: 両側のハンドルを移動&lt;/dd&gt;&lt;dd&gt;- Shift+クリック: ハンドルを削除&lt;/dd&gt;始点のアンカーを右クリックで始点を反対にする&lt;br&gt;Ctrl + 右クリックでメニューを表示</translation>
     </message>
     <message>
         <location filename="../bezierediting.py" line="106"/>
@@ -93,19 +76,14 @@ Ctrl + 右クリックでメニューを表示</translation>
 - Drag to draw a line&lt;br&gt;
 - Retrace a segment and the line will be modified&lt;br&gt;
 - Right click to commit feature / enter edit mode again</source>
-        <translation type="unfinished">&lt;b&gt;ベジエ曲線をフリーハンドで編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-- ドラッグでラインを書く&lt;br&gt;
-- ラインをなぞり直すと修正される&lt;br&gt;
-- 右クリックで編集の確定／編集の再開</translation>
+        <translation>&lt;b&gt;ベジエ曲線をフリーハンドで編集&lt;/b&gt;&lt;br&gt;&lt;br&gt;- ドラッグでラインを書く&lt;br&gt;- ラインをなぞり直すと修正される&lt;br&gt;- 右クリックで編集の確定／編集の再開</translation>
     </message>
     <message>
         <location filename="../bezierediting.py" line="130"/>
         <source>&lt;b&gt;Merge Bezier Curves&lt;/b&gt;&lt;br&gt;&lt;br&gt;
 1. Click or click&amp;&amp;drag to select features&lt;br&gt;
 2. Right click to merge.</source>
-        <translation>&lt;b&gt;ベジエラインを結合&lt;/b&gt;&lt;br&gt;&lt;br&gt;
-1. クリック か クリック&amp;&amp;ドラッグでフィーチャーを選択&lt;br&gt;
-2. 右クリックで結合</translation>
+        <translation>&lt;b&gt;ベジエラインを結合&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. クリック か クリック&amp;&amp;ドラッグでフィーチャーを選択&lt;br&gt;2. 右クリックで結合</translation>
     </message>
 </context>
 <context>
