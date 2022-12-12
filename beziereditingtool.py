@@ -1147,6 +1147,7 @@ class BezierEditingTool(QgsMapTool):
         unsplit selected two feature.it needs the feature can convert to bezier line.
         """
         layer = self.canvas.currentLayer()
+        fields = layer.fields()
         if layer.geometryType() == QgsWkbTypes.LineGeometry:
             selected_features = layer.selectedFeatures()
             if len(selected_features) == 2:
@@ -1192,7 +1193,7 @@ class BezierEditingTool(QgsMapTool):
                 settings = QSettings()
                 disable_attributes = settings.value("/qgis/digitizing/disable_enter_attribute_values_dialog", False,
                                                     type=bool)
-                if disable_attributes:
+                if disable_attributes or fields.count() == 0:
                     layer.changeGeometry(f0.id(), geom)
                     layer.deleteFeature(f1.id())
                     layer.endEditCommand()
