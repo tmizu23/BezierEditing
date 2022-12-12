@@ -656,9 +656,12 @@ class BezierEditingTool(QgsMapTool):
     def createFeature(self, geom, feature, editmode=True, showdlg=True):
         """
         create or edit feature
+        Referred to
+        https://github.com/EnMAP-Box/qgispluginsupport/blob/master/qps/maptools.py#L717
         """
         continueFlag = False
         layer = self.canvas.currentLayer()
+        fields = layer.fields()
         self.checkCRS()
         if self.layerCRS.srsid() != self.projectCRS.srsid():
             geom.transform(QgsCoordinateTransform(
@@ -701,7 +704,7 @@ class BezierEditingTool(QgsMapTool):
         if isinstance(entry, QgsSettingsEntryBool):
             disable_attributes = entry.value()
 
-        if disable_attributes or showdlg is False:
+        if disable_attributes or showdlg is False or fields.count() == 0:
             if not editmode:
                 layer.beginEditCommand(self.tr("Bezier added"))
                 layer.addFeature(newFeature)
@@ -728,11 +731,11 @@ class BezierEditingTool(QgsMapTool):
                         continueFlag = True
             else:
                 layer.beginEditCommand("Bezier edited")
-                newFeature = feature
-                dlg = self.iface.getFeatureForm(layer, newFeature)
+                #newFeature = feature
+                dlg = self.iface.getFeatureForm(layer, feature)
                 ok = dlg.exec_()
                 if ok:
-                    layer.changeGeometry(newFeature.id(), geom)
+                    layer.changeGeometry(feature.id(), geom)
                     layer.endEditCommand()
                 else:
                     layer.destroyEditCommand()
