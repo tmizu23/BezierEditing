@@ -1,6 +1,18 @@
  BezierEditing plugin - version 1.3.6
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
+
+> 
+> BezierEditing version 1.3.6 requires QGIS 3.20 or later.
+>
+>
+> To use BezierEditing version 1.3.4 for QGIS 3.18 or earlier, download BezierEditing.zip from the following URL,
+> Select the zip file from Manage Plugins in QGIS and install it.
+>
+> https://github.com/tmizu23/BezierEditing/releases/tag/v1.3.4
+>
+> 
+
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
   
 Install
