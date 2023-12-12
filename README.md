@@ -1,9 +1,9 @@
- BezierEditing plugin - version 1.3.6
+ BezierEditing plugin - version 1.3.7
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 
 > 
-> BezierEditing version 1.3.6 requires QGIS 3.20 or later.
+> BezierEditing version 1.3.7 requires QGIS 3.20 or later.
 >
 >
 > To use BezierEditing version 1.3.4 for QGIS 3.18 or earlier, download BezierEditing.zip from the following URL,
@@ -37,6 +37,12 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.3.7
+- fixed a bug where the tool button does not switch.
+- fixed a bug where the setting for disable_enter_attribute_values_dialog is not applied.
+- fixed a bug where the UseLastValue setting is not applied.
+- fixed a bug where the default values of the form are not applied.
+  
 Version 1.3.6
 - added Hungarian translation contributed by @BathoryPeter
 - added detailed tooltip for Bezier Edit button
