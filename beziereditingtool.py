@@ -667,39 +667,30 @@ class BezierEditingTool(QgsMapTool):
             geom.transform(QgsCoordinateTransform(
                 self.projectCRS, self.layerCRS, QgsProject.instance()))
 
-        qgsSettingsRegistry = QgsSettingsRegistryCore()
         initialAttributeValues = dict()
-        reuseLastValues = False
-        defaultAttributeValues: dict = {}
-        entry = qgsSettingsRegistry.settingsEntry(
-            'qgis/digitizing/reuseLastValues')
-        if isinstance(entry, QgsSettingsEntryBool):
-            reuseLastValues = entry.value()
+        reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
 
         lyr: QgsVectorLayer = layer
         for idx in range(lyr.fields().count()):
-
-            if idx in defaultAttributeValues.keys():
-                initialAttributeValues[idx] = defaultAttributeValues[idx]
-            elif (reuseLastValues or lyr.editFormConfig().reuseLastValue(idx)) and \
-                    layer.id() in self.sLastUsedValues.keys() and \
-                    idx in self.sLastUsedValues[lyr.id()].keys():
-
+            if lyr.dataProvider().defaultValueClause(idx)!="":
+                initialAttributeValues[idx] = lyr.dataProvider().defaultValueClause(idx)
+            elif (reuseLastValues or lyr.editFormConfig().reuseLastValue(idx)) and layer.id() in self.sLastUsedValues.keys() and idx in self.sLastUsedValues[lyr.id()].keys():
+                QgsMessageLog.logMessage("bbb", "BezierEditingTool", Qgis.Info)
                 lastUsed = self.sLastUsedValues[lyr.id()][idx]
-                """
-                // Only set initial attribute value if it's different from the default clause or we may trigger
-                // unique constraint checks for no reason, see https://github.com/qgis/QGIS/issues/42909
-                """
-                if lyr.dataProvider() and lyr.dataProvider().defaultValueClause(idx) != lastUsed:
-                    initialAttributeValues[idx] = lastUsed
+                initialAttributeValues[idx] = lastUsed
 
         context = layer.createExpressionContext()
         f = QgsVectorLayerUtils.createFeature(
             layer, geom, initialAttributeValues, context)
         newFeature = QgsFeature(f)
 
-        disable_attributes = False
-        disable_attributes = QSettings().value("/Qgis/digitizing/disable_enter_attribute_values_dialog")
+        disable_attributes = QSettings().value("qgis/digitizing/disable_enter_attribute_values_dialog", False, type=bool)
+
+        # for debug
+        # QgsMessageLog.logMessage("disable_attributes: " + str(disable_attributes), "BezierEditingTool", Qgis.Info)
+        # QgsMessageLog.logMessage("showdlg: " + str(showdlg), "BezierEditingTool", Qgis.Info)
+        # QgsMessageLog.logMessage("fields.count(): " + str(fields.count()), "BezierEditingTool", Qgis.Info)
+        # QgsMessageLog.logMessage("editmode: " + str(editmode), "BezierEditingTool", Qgis.Info)
 
         if disable_attributes or showdlg is False or fields.count() == 0:
             if not editmode:
@@ -728,7 +719,6 @@ class BezierEditingTool(QgsMapTool):
                         continueFlag = True
             else:
                 layer.beginEditCommand("Bezier edited")
-                #newFeature = feature
                 dlg = self.iface.getFeatureForm(layer, feature)
                 ok = dlg.exec_()
                 if ok:
@@ -749,24 +739,17 @@ class BezierEditingTool(QgsMapTool):
         if not isinstance(form, QgsAttributeForm):
             return
 
-        qgsSettingsRegistry = QgsSettingsRegistryCore()
-
-        reuseLastValues = False
-        entry = qgsSettingsRegistry.settingsEntry(
-            'qgis/digitizing/reuseLastValues')
-        if isinstance(entry, QgsSettingsEntryBool):
-            reuseLastValues = entry.value()
-
+        reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
+        QgsMessageLog.logMessage(" onFeatureSaved reuseLastValues: " + str(reuseLastValues), "BezierEditingTool", Qgis.Info)
         lyr = self.canvas.currentLayer()
-
-        if reuseLastValues:
-            fields = lyr.fields()
-            origValues: Dict[int, Any] = self.sLastUsedValues.get(
-                lyr.id(), dict())
-            newValues: List = feature.attributes()
-            for idx in range(fields.count()):
+        fields = lyr.fields()
+        origValues: Dict[int, Any] = self.sLastUsedValues.get(
+            lyr.id(), dict())
+        newValues: List = feature.attributes()
+        for idx in range(fields.count()):
+            if(reuseLastValues or lyr.editFormConfig().reuseLastValue(idx)):
                 origValues[idx] = newValues[idx]
-            self.sLastUsedValues[lyr.id()] = origValues
+        self.sLastUsedValues[lyr.id()] = origValues
 
     def undo(self):
         """
