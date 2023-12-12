@@ -169,27 +169,37 @@ Ctrl + right click shows context menu."""
     def open_browser(self):
         webbrowser.open('https://github.com/tmizu23/BezierEditing/wiki')
 
+    def toggleAllOff(self):
+        self.bezier_edit.setChecked(False)
+        self.freehand.setChecked(False)
+        self.split.setChecked(False)
+        self.unsplit.setChecked(False)
+
     def bezierediting(self):
         self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
+        self.toggleAllOff()
         self.bezier_edit.setChecked(True)
         self.beziertool.mode = "bezier"
 
     def freehandediting(self):
         self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
+        self.toggleAllOff()
         self.freehand.setChecked(True)
         self.beziertool.mode = "freehand"
 
     def spliting(self):
         self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
+        self.toggleAllOff()
         self.split.setChecked(True)
         self.beziertool.mode = "split"
 
     def unspliting(self):
         self.currentTool = self.beziertool
         self.canvas.setMapTool(self.beziertool)
+        self.toggleAllOff()
         self.unsplit.setChecked(True)
         self.beziertool.mode = "unsplit"
 
