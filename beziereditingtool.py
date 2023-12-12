@@ -699,10 +699,7 @@ class BezierEditingTool(QgsMapTool):
         newFeature = QgsFeature(f)
 
         disable_attributes = False
-        entry = qgsSettingsRegistry.settingsEntry(
-            'qgis/digitizing/disable_enter_attribute_values_dialog')
-        if isinstance(entry, QgsSettingsEntryBool):
-            disable_attributes = entry.value()
+        disable_attributes = QSettings().value("/Qgis/digitizing/disable_enter_attribute_values_dialog")
 
         if disable_attributes or showdlg is False or fields.count() == 0:
             if not editmode:
