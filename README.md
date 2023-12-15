@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.7
+ BezierEditing plugin - version 1.3.8
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 
@@ -37,6 +37,9 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.3.8
+- fixed a bug where attributes disappear in the split tool.
+    
 Version 1.3.7
 - fixed a bug where the tool button does not switch.
 - fixed a bug where the setting for disable_enter_attribute_values_dialog is not applied.

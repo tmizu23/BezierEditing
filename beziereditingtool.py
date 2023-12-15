@@ -662,20 +662,23 @@ class BezierEditingTool(QgsMapTool):
         continueFlag = False
         layer = self.canvas.currentLayer()
         fields = layer.fields()
+
         self.checkCRS()
         if self.layerCRS.srsid() != self.projectCRS.srsid():
             geom.transform(QgsCoordinateTransform(
                 self.projectCRS, self.layerCRS, QgsProject.instance()))
+
 
         initialAttributeValues = dict()
         reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
 
         lyr: QgsVectorLayer = layer
         for idx in range(lyr.fields().count()):
-            if lyr.dataProvider().defaultValueClause(idx)!="":
+            if feature is not None:
+                initialAttributeValues[idx] = feature.attributes()[idx]
+            elif lyr.dataProvider().defaultValueClause(idx)!="":
                 initialAttributeValues[idx] = lyr.dataProvider().defaultValueClause(idx)
             elif (reuseLastValues or lyr.editFormConfig().reuseLastValue(idx)) and layer.id() in self.sLastUsedValues.keys() and idx in self.sLastUsedValues[lyr.id()].keys():
-                QgsMessageLog.logMessage("bbb", "BezierEditingTool", Qgis.Info)
                 lastUsed = self.sLastUsedValues[lyr.id()][idx]
                 initialAttributeValues[idx] = lastUsed
 
@@ -686,11 +689,6 @@ class BezierEditingTool(QgsMapTool):
 
         disable_attributes = QSettings().value("qgis/digitizing/disable_enter_attribute_values_dialog", False, type=bool)
 
-        # for debug
-        # QgsMessageLog.logMessage("disable_attributes: " + str(disable_attributes), "BezierEditingTool", Qgis.Info)
-        # QgsMessageLog.logMessage("showdlg: " + str(showdlg), "BezierEditingTool", Qgis.Info)
-        # QgsMessageLog.logMessage("fields.count(): " + str(fields.count()), "BezierEditingTool", Qgis.Info)
-        # QgsMessageLog.logMessage("editmode: " + str(editmode), "BezierEditingTool", Qgis.Info)
 
         if disable_attributes or showdlg is False or fields.count() == 0:
             if not editmode:
@@ -740,7 +738,6 @@ class BezierEditingTool(QgsMapTool):
             return
 
         reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
-        QgsMessageLog.logMessage(" onFeatureSaved reuseLastValues: " + str(reuseLastValues), "BezierEditingTool", Qgis.Info)
         lyr = self.canvas.currentLayer()
         fields = lyr.fields()
         origValues: Dict[int, Any] = self.sLastUsedValues.get(
