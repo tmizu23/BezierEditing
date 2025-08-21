@@ -1,17 +1,7 @@
- BezierEditing plugin - version 1.3.8
+ BezierEditing plugin - version 1.3.9
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 
-> 
-> BezierEditing version 1.3.7 requires QGIS 3.20 or later.
->
->
-> To use BezierEditing version 1.3.4 for QGIS 3.18 or earlier, download BezierEditing.zip from the following URL,
-> Select the zip file from Manage Plugins in QGIS and install it.
->
-> https://github.com/tmizu23/BezierEditing/releases/tag/v1.3.4
->
-> 
 
 ![](https://github.com/tmizu23/BezierEditing/wiki/images/BezierEditing.png)
   
@@ -37,6 +27,11 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.3.9
+- added streaming mode for freehand tool (click-move-click drawing without dragging)
+- added context menu for freehand tool settings (Ctrl+right-click)
+- fixed reuseLastValues error on linux
+
 Version 1.3.8
 - fixed a bug where attributes disappear in the split tool.
     

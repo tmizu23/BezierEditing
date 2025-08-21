@@ -17,7 +17,7 @@
 """
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QSettings, QPointF
-from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument
+from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument, QIcon
 from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox, QPushButton
 from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsApplication, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
 from qgis.gui import QgsAttributeEditorContext, QgsMapTool, QgsAttributeDialog, QgsRubberBand, QgsAttributeForm, QgsVertexMarker, QgsHighlight, QgsMapCanvasAnnotationItem
@@ -82,9 +82,11 @@ class BezierEditingTool(QgsMapTool):
 
         # initialize variable
         self.mode = "bezier"  # [bezier, freehand , split, unsplit]
-        # [free, add_anchor,move_anchor,move_handle,insert_anchor,draw_line]
+        # [free, add_anchor,move_anchor,move_handle,insert_anchor,draw_line,drawing_freehand]
         self.mouse_state = "free"
         self.editing = False  # in bezier editing or not
+        self.freehand_drawing = False  # Track if we're in freehand drawing mode
+        self.freehand_streaming = False  # Streaming mode for freehand tool (will be loaded from settings)
         self.snapping = None  # in snap setting or not
         self.show_handle = True  # show handle or not
         self.editing_feature_id = None  # bezier editing feature id
@@ -104,6 +106,8 @@ class BezierEditingTool(QgsMapTool):
         s = QgsSettings()
         BezierGeometry.INTERPOLATION = int(
             s.value("BezierEditing/INTERPOLATION", 10))
+        # Load streaming mode setting
+        self.freehand_streaming = s.value("BezierEditing/freehand_streaming", False, type=bool)
 
     def tr(self, message):
         return QCoreApplication.translate('BezierEditingTool', message)
@@ -225,26 +229,61 @@ class BezierEditingTool(QgsMapTool):
                         self.bm.add_anchor(self.clicked_idx, snap_point[0])
         # freehand tool
         elif self.mode == "freehand":
+            # right click with Ctrl - show context menu
+            if event.button() == Qt.RightButton and bool(modifiers & Qt.ControlModifier):
+                self.showFreehandContextMenu(event)
+                return
             # left click
-            if event.button() == Qt.LeftButton:
-                # if click on canvas, freehand drawing start
-                if not self.editing:
-                    self.bg = BezierGeometry(self.projectCRS)
-                    self.bm = BezierMarker(self.canvas, self.bg)
-                    point = mouse_point
-                    self.bg.add_anchor(0, point, undo=False)
-                    self.editing = True
-                # if click on bezier line, modified by freehand drawing
-                elif self.editing and (snapped[1] or snapped[3]):
-                    if snapped[1]:
-                        point = snap_point[1]
-                    elif snapped[3]:
-                        point = snap_point[3]
+            elif event.button() == Qt.LeftButton:
+                # Streaming mode behavior (click-move-click)
+                if self.freehand_streaming:
+                    # If we're already drawing, finish the line
+                    if self.freehand_drawing:
+                        self.drawlineToBezier(snapped[4])
+                        self.freehand_drawing = False
+                        self.mouse_state = "free"
+                        return
+                    
+                    # Start new drawing
+                    # if click on canvas, freehand drawing start
+                    if not self.editing:
+                        self.bg = BezierGeometry(self.projectCRS)
+                        self.bm = BezierMarker(self.canvas, self.bg)
+                        point = mouse_point
+                        self.bg.add_anchor(0, point, undo=False)
+                        self.editing = True
+                    # if click on bezier line, modified by freehand drawing
+                    elif self.editing and (snapped[1] or snapped[3]):
+                        if snapped[1]:
+                            point = snap_point[1]
+                        elif snapped[3]:
+                            point = snap_point[3]
+                    else:
+                        return
+                    self.freehand_drawing = True
+                    self.mouse_state = "drawing_freehand"
+                    self.freehand_rbl.reset(QgsWkbTypes.LineGeometry)
+                    self.freehand_rbl.addPoint(point)
+                # Original drag mode behavior
                 else:
-                    return
-                self.mouse_state = "draw_line"
-                self.freehand_rbl.reset(QgsWkbTypes.LineGeometry)
-                self.freehand_rbl.addPoint(point)
+                    # if click on canvas, freehand drawing start
+                    if not self.editing:
+                        self.bg = BezierGeometry(self.projectCRS)
+                        self.bm = BezierMarker(self.canvas, self.bg)
+                        point = mouse_point
+                        self.bg.add_anchor(0, point, undo=False)
+                        self.editing = True
+                    # if click on bezier line, modified by freehand drawing
+                    elif self.editing and (snapped[1] or snapped[3]):
+                        if snapped[1]:
+                            point = snap_point[1]
+                        elif snapped[3]:
+                            point = snap_point[3]
+                    else:
+                        return
+                    self.mouse_state = "draw_line"
+                    self.freehand_rbl.reset(QgsWkbTypes.LineGeometry)
+                    self.freehand_rbl.addPoint(point)
         # split tool
         elif self.mode == "split":
             # right click
@@ -394,8 +433,15 @@ class BezierEditingTool(QgsMapTool):
         # freehand tool
         elif self.mode == "freehand":
             self.canvas.setCursor(self.drawline_cursor)
-            # if dragging, drawing line
-            if self.mouse_state == "draw_line":
+            # Streaming mode - continuously add points following mouse
+            if self.freehand_streaming and self.freehand_drawing and self.mouse_state == "drawing_freehand":
+                point = mouse_point
+                # on start anchor
+                if snapped[4]:
+                    point = snap_point[4]
+                self.freehand_rbl.addPoint(point)
+            # Original drag mode - add points while dragging
+            elif not self.freehand_streaming and self.mouse_state == "draw_line":
                 point = mouse_point
                 # on start anchor
                 if snapped[4]:
@@ -426,10 +472,14 @@ class BezierEditingTool(QgsMapTool):
                 self.mouse_state = "free"
             # freehand tool
             elif self.mode == "freehand":
-                # convert drawing line to bezier line
-                if self.mouse_state != "free":
-                    self.drawlineToBezier(snapped[4])
-                    self.mouse_state = "free"
+                # Streaming mode - don't process release event
+                if self.freehand_streaming:
+                    pass
+                # Original drag mode - convert drawing line to bezier line
+                else:
+                    if self.mouse_state != "free":
+                        self.drawlineToBezier(snapped[4])
+                        self.mouse_state = "free"
             # split tool
             elif self.mode == "split":
                 self.clicked_idx = None
@@ -465,6 +515,7 @@ class BezierEditingTool(QgsMapTool):
                         self.editing = True
             # freehand tool
             elif self.mode == "freehand":
+                # Ctrl+right click is handled in canvasPressEvent
                 if bool(modifiers & Qt.ControlModifier):
                     return
                 # if right click in editing, bezier editing finish
@@ -566,6 +617,8 @@ class BezierEditingTool(QgsMapTool):
         self.editing_feature_id = None
         self.editing_geom_type = None
         self.editing = False
+        self.freehand_drawing = False
+        self.mouse_state = "free"
 
     def convertFeatureToBezier(self, feature):
         """
@@ -670,7 +723,11 @@ class BezierEditingTool(QgsMapTool):
 
 
         initialAttributeValues = dict()
-        reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
+        val = QSettings().value("qgis/digitizing/reuseLastValues", False)
+        if isinstance(val, str):
+            reuseLastValues = True if val.lower() == "true" else False
+        else:
+            reuseLastValues = bool(val)
 
         lyr: QgsVectorLayer = layer
         for idx in range(lyr.fields().count()):
@@ -687,8 +744,13 @@ class BezierEditingTool(QgsMapTool):
             layer, geom, initialAttributeValues, context)
         newFeature = QgsFeature(f)
 
-        disable_attributes = QSettings().value("qgis/digitizing/disable_enter_attribute_values_dialog", False, type=bool)
-
+        val = QSettings().value(
+            "qgis/digitizing/disable_enter_attribute_values_dialog", False
+        )
+        if isinstance(val, str):
+            disable_attributes = True if val.lower() == "true" else False
+        else:
+            disable_attributes = bool(val)
 
         if disable_attributes or showdlg is False or fields.count() == 0:
             if not editmode:
@@ -737,7 +799,11 @@ class BezierEditingTool(QgsMapTool):
         if not isinstance(form, QgsAttributeForm):
             return
 
-        reuseLastValues = QSettings().value("qgis/digitizing/reuseLastValues", False, type=bool)
+        val = QSettings().value("qgis/digitizing/reuseLastValues", False)
+        if isinstance(val, str):
+            reuseLastValues = True if val.lower() == "true" else False
+        else:
+            reuseLastValues = bool(val)
         lyr = self.canvas.currentLayer()
         fields = lyr.fields()
         origValues: Dict[int, Any] = self.sLastUsedValues.get(
@@ -765,6 +831,36 @@ class BezierEditingTool(QgsMapTool):
         self.show_handle = checked
         if self.bm is not None:
             self.bm.show_handle(checked)
+    
+    def showFreehandContextMenu(self, event):
+        """
+        Show context menu for freehand tool settings
+        """
+        menu = QMenu()
+        
+        # Add streaming mode action
+        streamingAction = QAction(self.tr("Streaming"), menu)
+        streamingAction.setCheckable(True)
+        streamingAction.setChecked(self.freehand_streaming)
+        streamingAction.triggered.connect(self.toggleFreehandStreaming)
+        menu.addAction(streamingAction)
+        
+        # Show menu at cursor position
+        menu.exec_(self.canvas.mapToGlobal(event.pos()))
+    
+    def toggleFreehandStreaming(self):
+        """
+        Toggle streaming mode for freehand tool
+        """
+        self.freehand_streaming = not self.freehand_streaming
+        # Save the setting
+        s = QgsSettings()
+        s.setValue("BezierEditing/freehand_streaming", self.freehand_streaming)
+        # Reset any ongoing drawing when switching modes
+        if self.freehand_drawing:
+            self.freehand_drawing = False
+            self.mouse_state = "free"
+            self.freehand_rbl.reset()
 
     def getSnapPoint(self, event):
         """
