@@ -16,7 +16,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QSettings, QPointF
+from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QPointF
 from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument, QIcon
 from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox, QPushButton
 from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsApplication, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
@@ -107,7 +107,13 @@ class BezierEditingTool(QgsMapTool):
         BezierGeometry.INTERPOLATION = int(
             s.value("BezierEditing/INTERPOLATION", 10))
         # Load streaming mode setting
-        self.freehand_streaming = s.value("BezierEditing/freehand_streaming", False, type=bool)
+        streaming_val = s.value("BezierEditing/freehand_streaming", False)
+        if streaming_val is None:
+            self.freehand_streaming = False
+        elif isinstance(streaming_val, str):
+            self.freehand_streaming = streaming_val.lower() == "true"
+        else:
+            self.freehand_streaming = bool(streaming_val)
 
     def tr(self, message):
         return QCoreApplication.translate('BezierEditingTool', message)
@@ -723,9 +729,12 @@ class BezierEditingTool(QgsMapTool):
 
 
         initialAttributeValues = dict()
-        val = QSettings().value("qgis/digitizing/reuseLastValues", False)
-        if isinstance(val, str):
-            reuseLastValues = True if val.lower() == "true" else False
+        settings = QgsSettings()
+        val = settings.value("qgis/digitizing/reuseLastValues", False)
+        if val is None:
+            reuseLastValues = False
+        elif isinstance(val, str):
+            reuseLastValues = val.lower() == "true"
         else:
             reuseLastValues = bool(val)
 
@@ -744,11 +753,14 @@ class BezierEditingTool(QgsMapTool):
             layer, geom, initialAttributeValues, context)
         newFeature = QgsFeature(f)
 
-        val = QSettings().value(
+        settings = QgsSettings()
+        val = settings.value(
             "qgis/digitizing/disable_enter_attribute_values_dialog", False
         )
-        if isinstance(val, str):
-            disable_attributes = True if val.lower() == "true" else False
+        if val is None:
+            disable_attributes = False
+        elif isinstance(val, str):
+            disable_attributes = val.lower() == "true"
         else:
             disable_attributes = bool(val)
 
@@ -799,9 +811,12 @@ class BezierEditingTool(QgsMapTool):
         if not isinstance(form, QgsAttributeForm):
             return
 
-        val = QSettings().value("qgis/digitizing/reuseLastValues", False)
-        if isinstance(val, str):
-            reuseLastValues = True if val.lower() == "true" else False
+        settings = QgsSettings()
+        val = settings.value("qgis/digitizing/reuseLastValues", False)
+        if val is None:
+            reuseLastValues = False
+        elif isinstance(val, str):
+            reuseLastValues = val.lower() == "true"
         else:
             reuseLastValues = bool(val)
         lyr = self.canvas.currentLayer()
@@ -1263,9 +1278,14 @@ class BezierEditingTool(QgsMapTool):
                     geom = QgsGeometry.fromMultiPolylineXY([line])
 
                 layer.beginEditCommand(self.tr("Bezier unsplit"))
-                settings = QSettings()
-                disable_attributes = settings.value("/qgis/digitizing/disable_enter_attribute_values_dialog", False,
-                                                    type=bool)
+                settings = QgsSettings()
+                disable_val = settings.value("/qgis/digitizing/disable_enter_attribute_values_dialog", False)
+                if disable_val is None:
+                    disable_attributes = False
+                elif isinstance(disable_val, str):
+                    disable_attributes = disable_val.lower() == "true"
+                else:
+                    disable_attributes = bool(disable_val)
                 if disable_attributes or fields.count() == 0:
                     layer.changeGeometry(f0.id(), geom)
                     layer.deleteFeature(f1.id())
