@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.9
+ BezierEditing plugin - version 1.3.10
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 
@@ -27,6 +27,9 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.3.10
+- fixed an issue where installation failed in Linux environments.
+
 Version 1.3.9
 - added streaming mode for freehand tool (click-move-click drawing without dragging)
 - added context menu for freehand tool settings (Ctrl+right-click)
