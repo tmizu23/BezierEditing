@@ -1,4 +1,4 @@
- BezierEditing plugin - version 1.3.10
+ BezierEditing plugin - version 1.4.0
 ===================================
 This is a [QGIS plugin](https://plugins.qgis.org/plugins/BezierEditing/) which edits features with Bezier curves.
 
@@ -27,6 +27,10 @@ Dependent Python libraries and resources
 
 Change Log
 --------------------------------------------
+Version 1.4.0
+- added QGIS 4 (Qt6/PyQt6) compatibility
+- maintained backward compatibility with QGIS 3.20+
+
 Version 1.3.10
 - fixed an issue where installation failed in Linux environments.
 
