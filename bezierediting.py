@@ -25,6 +25,7 @@ import webbrowser
 
 from . import resources
 from .beziereditingtool import BezierEditingTool
+from .compat import VectorLayer, MessageInfo
 
 
 class BezierEditing(object):
@@ -212,7 +213,7 @@ Ctrl + right click shows context menu."""
         if layer is None:
             return
 
-        if layer.isEditable() and layer.type() == QgsMapLayer.VectorLayer:
+        if layer.isEditable() and layer.type() == VectorLayer:
             self.bezier_edit.setEnabled(True)
             self.freehand.setEnabled(True)
             self.split.setEnabled(True)
@@ -237,7 +238,7 @@ Ctrl + right click shows context menu."""
             self.show_handle.setEnabled(False)
             self.undo.setEnabled(False)
 
-            if layer.type() == QgsMapLayer.VectorLayer:
+            if layer.type() == VectorLayer:
                 try:
                     layer.editingStarted.disconnect(self.toggle)
                 except TypeError:
@@ -269,4 +270,4 @@ Ctrl + right click shows context menu."""
         self.iface.mapCanvas().mapToolSet.disconnect(self.maptoolChanged)
 
     def log(self, msg):
-        QgsMessageLog.logMessage(msg, 'BezierEditing', Qgis.Info)
+        QgsMessageLog.logMessage(msg, 'BezierEditing', MessageInfo)

@@ -17,6 +17,7 @@
 """
 from qgis.core import *
 from .fitCurves import *
+from .compat import PointGeometry, LineGeometry, PolygonGeometry, MessageInfo
 import copy
 import math
 import numpy as np
@@ -91,29 +92,29 @@ class BezierGeometry:
         geom = None
         num_anchor = self.anchorCount()
 
-        if layer_type == QgsWkbTypes.PointGeometry and num_anchor == 1:
+        if layer_type == PointGeometry and num_anchor == 1:
             geom = QgsGeometry.fromPointXY(self.points[0])
             result = True
-        elif layer_type == QgsWkbTypes.LineGeometry and num_anchor >= 2:
+        elif layer_type == LineGeometry and num_anchor >= 2:
             if QgsWkbTypes.isMultiType(layer_wkbtype):
                 geom = QgsGeometry.fromMultiPolylineXY([self.points])
                 result = True
             else:
                 geom = QgsGeometry.fromPolylineXY(self.points)
                 result = True
-        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] == self.points[-1]:
+        elif layer_type == PolygonGeometry and num_anchor >= 3 and self.points[0] == self.points[-1]:
             geom = QgsGeometry.fromPolygonXY([self.points])
             result = True
-        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor >= 3 and self.points[0] != self.points[-1]:
+        elif layer_type == PolygonGeometry and num_anchor >= 3 and self.points[0] != self.points[-1]:
             # if first point and last point is different, interpolate points.
             point_list = self._lineToInterpolatePointList(
                 [self.points[-1], self.points[0]])
             geom = QgsGeometry.fromPolygonXY(
                 [self.points + point_list[0][1:-1]])
             result = True
-        elif layer_type == QgsWkbTypes.LineGeometry and num_anchor < 2:
+        elif layer_type == LineGeometry and num_anchor < 2:
             result = None
-        elif layer_type == QgsWkbTypes.PolygonGeometry and num_anchor < 3:
+        elif layer_type == PolygonGeometry and num_anchor < 3:
             result = None
         else:
             result = False
@@ -339,7 +340,7 @@ class BezierGeometry:
                     {"state": "insert_geom", "pointidx": start_anchoridx, "pointnum": pointnum, "cp_first": cp_first,
                      "cp_last": cp_last})
             # modify polygon
-            elif layer_type == QgsWkbTypes.PolygonGeometry and lastpnt_is_near and last_vertexidx <= start_vertexidx:
+            elif layer_type == PolygonGeometry and lastpnt_is_near and last_vertexidx <= start_vertexidx:
                 polyline = point_list[start_anchoridx - 1][0:self._pointListIdx(start_vertexidx)] + update_line + \
                     point_list[last_anchoridx -
                                1][self._pointListIdx(last_vertexidx):]
@@ -1019,4 +1020,4 @@ class BezierGeometry:
         self.log("#####      end     ######")
 
     def log(self, msg):
-        QgsMessageLog.logMessage(msg, 'MyPlugin', Qgis.Info)
+        QgsMessageLog.logMessage(msg, 'MyPlugin', MessageInfo)

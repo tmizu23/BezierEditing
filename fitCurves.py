@@ -4,10 +4,10 @@
     "Graphics Gems", Academic Press, 1990
 """
 
-from __future__ import print_function
 from numpy import *
 from . import bezier
 from qgis.core import *
+from .compat import MessageInfo
 
 # Fit one (ore more) Bezier curves to a set of points
 def fitCurve(points, maxError):
@@ -165,4 +165,4 @@ def normalize(v):
     return v / linalg.norm(v)
 
 def mylog(msg):
-    QgsMessageLog.logMessage(msg, 'MyPlugin', Qgis.Info)
+    QgsMessageLog.logMessage(msg, 'MyPlugin', MessageInfo)

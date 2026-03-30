@@ -19,10 +19,18 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtCore import QObject, QLocale, QTranslator, QCoreApplication, QPointF
 from qgis.PyQt.QtGui import QColor, QCursor, QPixmap, QFont, QTextDocument, QIcon
 from qgis.PyQt.QtWidgets import QApplication, QAction, QAbstractButton, QGraphicsItemGroup, QMenu, QInputDialog, QMessageBox, QPushButton
-from qgis.core import QgsSettingsRegistryCore, QgsSettingsEntryBool, QgsWkbTypes, QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, Qgis, QgsAction, QgsApplication, QgsMapLayer, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
-from qgis.gui import QgsAttributeEditorContext, QgsMapTool, QgsAttributeDialog, QgsRubberBand, QgsAttributeForm, QgsVertexMarker, QgsHighlight, QgsMapCanvasAnnotationItem
+from qgis.core import QgsProject, QgsVectorLayer, QgsGeometry, QgsPointXY, QgsFeature, QgsEditFormConfig, QgsFeatureRequest, QgsDistanceArea, QgsRectangle, QgsVectorLayerUtils, QgsAction, QgsApplication, QgsCoordinateTransform, QgsExpressionContextScope, QgsSettings, QgsMarkerSymbol, QgsTextAnnotation, QgsMessageLog
+from qgis.gui import QgsMapTool, QgsAttributeDialog, QgsRubberBand, QgsAttributeForm, QgsVertexMarker, QgsHighlight, QgsMapCanvasAnnotationItem
 from .BezierGeometry import *
 from .BezierMarker import *
+from .compat import (
+    WA_DeleteOnClose, ArrowCursor, LeftButton, RightButton,
+    ControlModifier, AltModifier, ShiftModifier,
+    MsgBoxYes, MsgBoxNo, MsgBoxCancel, MsgBoxQuestion, MsgBoxApplyRole,
+    PointGeometry, LineGeometry, PolygonGeometry,
+    WkbLineString, WkbMultiLineString,
+    VectorLayer, MessageInfo, MessageWarning, IconBox, AddFeatureMode
+)
 import math
 import numpy as np
 from typing import Dict, Any, List
@@ -41,23 +49,23 @@ class BezierEditingTool(QgsMapTool):
         self.canvas.destinationCrsChanged.connect(self.crsChanged)
         # freehand tool line
         self.freehand_rbl = QgsRubberBand(
-            self.canvas, QgsWkbTypes.LineGeometry)
+            self.canvas, LineGeometry)
         self.freehand_rbl.setColor(QColor(255, 0, 0, 150))
         self.freehand_rbl.setWidth(2)
         # snap marker
         self.snap_mark = QgsVertexMarker(self.canvas)
         self.snap_mark.setColor(QColor(0, 0, 255))
         self.snap_mark.setPenWidth(2)
-        self.snap_mark.setIconType(QgsVertexMarker.ICON_BOX)
+        self.snap_mark.setIconType(IconBox)
         self.snap_mark.setIconSize(10)
         self.snap_mark.hide()
         # snap guide line
-        self.guide_rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.guide_rbl = QgsRubberBand(self.canvas, LineGeometry)
         self.guide_rbl.setColor(QColor(0, 0, 255, 150))
         self.guide_rbl.setWidth(1)
         # rectangle selection for unsplit
         self.rubberBand = QgsRubberBand(
-            self.canvas, QgsWkbTypes.PolygonGeometry)
+            self.canvas, PolygonGeometry)
         self.rubberBand.setColor(QColor(255, 0, 0, 100))
         self.rubberBand.setWidth(1)
 
@@ -78,7 +86,7 @@ class BezierEditingTool(QgsMapTool):
             QPixmap(':/plugins/BezierEditing/icon/drawline.svg'), 1, 1)
         self.split_cursor = QCursor(
             QPixmap(':/plugins/BezierEditing/icon/mCrossHair.svg'), -1, -1)
-        self.unsplit_cursor = QCursor(Qt.ArrowCursor)
+        self.unsplit_cursor = QCursor(ArrowCursor)
 
         # initialize variable
         self.mode = "bezier"  # [bezier, freehand , split, unsplit]
@@ -121,30 +129,30 @@ class BezierEditingTool(QgsMapTool):
     def crsChanged(self):
         if self.bg is not None:
             self.iface.messageBar().pushMessage(
-                self.tr("Warning"), self.tr("Reset editing data"), level=Qgis.Warning)
+                self.tr("Warning"), self.tr("Reset editing data"), level=MessageWarning)
             self.resetEditing()
         self.checkCRS()
 
     def canvasPressEvent(self, event):
         modifiers = QApplication.keyboardModifiers()
         layer = self.canvas.currentLayer()
-        if not layer or layer.type() != QgsMapLayer.VectorLayer:
+        if not layer or layer.type() != VectorLayer:
             return
         self.checkSnapSetting()
         mouse_point, snapped, snap_point, snap_idx = self.getSnapPoint(event)
         # bezier tool
         if self.mode == "bezier":
             # right click
-            if event.button() == Qt.RightButton:
-                if bool(modifiers & Qt.ControlModifier):
-                    self.menu.exec_(QCursor.pos())
+            if event.button() == RightButton:
+                if bool(modifiers & ControlModifier):
+                    self.menu.exec(QCursor.pos())
             # left click
-            elif event.button() == Qt.LeftButton:
+            elif event.button() == LeftButton:
                 # with ctrl
-                if bool(modifiers & Qt.ControlModifier):
+                if bool(modifiers & ControlModifier):
                     # if click on anchor with ctrl, force to add anchor not moving anchor
                     if snapped[1]:
-                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
+                        if self.editing_geom_type == PolygonGeometry:
                             return
                         self.mouse_state = "add_anchor"
                         self.clicked_idx = self.bg.anchorCount()
@@ -152,7 +160,7 @@ class BezierEditingTool(QgsMapTool):
                         self.bm.add_anchor(self.clicked_idx, snap_point[1])
                     # add the anchor snapped by guide. guide is on by ctrl
                     else:
-                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
+                        if self.editing_geom_type == PolygonGeometry:
                             return
                         if not self.editing:
                             self.bg = BezierGeometry(self.projectCRS)
@@ -163,7 +171,7 @@ class BezierEditingTool(QgsMapTool):
                         self.bg.add_anchor(self.clicked_idx, snap_point[0])
                         self.bm.add_anchor(self.clicked_idx, snap_point[0])
                 # with alt
-                elif bool(modifiers & Qt.AltModifier):
+                elif bool(modifiers & AltModifier):
                     # if click on anchor with alt, move out a handle from anchor
                     if snapped[2] and snapped[1]:
                         self.mouse_state = "move_handle"
@@ -181,11 +189,11 @@ class BezierEditingTool(QgsMapTool):
                         self.bm.move_handle(snap_idx[2], snap_point[2])
 
                 # with shift
-                elif bool(modifiers & Qt.ShiftModifier):
+                elif bool(modifiers & ShiftModifier):
                     # if click on anchor with shift, delete anchor from bezier line
                     if snapped[1]:
                         # polygon's first anchor
-                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and snap_idx[1] == self.bg.anchorCount()-1:
+                        if self.editing_geom_type == PolygonGeometry and snap_idx[1] == self.bg.anchorCount()-1:
                             self.bg.delete_anchor2(snap_idx[1], snap_point[1])
                             self.bm.delete_anchor(snap_idx[1])
                             self.bm.delete_anchor(0)
@@ -207,7 +215,7 @@ class BezierEditingTool(QgsMapTool):
                     if snapped[1]:
                         self.mouse_state = "move_anchor"
                         self.clicked_idx = snap_idx[1]
-                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and snap_idx[1] == (self.bg.anchorCount() - 1):
+                        if self.editing_geom_type == PolygonGeometry and snap_idx[1] == (self.bg.anchorCount() - 1):
                             self.bg.move_anchor2(snap_idx[1], snap_point[1])
                             self.bm.move_anchor(snap_idx[1], snap_point[1])
                             self.bm.move_anchor(0, snap_point[1])
@@ -223,7 +231,7 @@ class BezierEditingTool(QgsMapTool):
                         self.bm.move_handle(snap_idx[2], snap_point[2])
                     # if click on canvas, add anchor
                     else:
-                        if self.editing_geom_type == QgsWkbTypes.PolygonGeometry:
+                        if self.editing_geom_type == PolygonGeometry:
                             return
                         if not self.editing:
                             self.bg = BezierGeometry(self.projectCRS)
@@ -236,11 +244,11 @@ class BezierEditingTool(QgsMapTool):
         # freehand tool
         elif self.mode == "freehand":
             # right click with Ctrl - show context menu
-            if event.button() == Qt.RightButton and bool(modifiers & Qt.ControlModifier):
+            if event.button() == RightButton and bool(modifiers & ControlModifier):
                 self.showFreehandContextMenu(event)
                 return
             # left click
-            elif event.button() == Qt.LeftButton:
+            elif event.button() == LeftButton:
                 # Streaming mode behavior (click-move-click)
                 if self.freehand_streaming:
                     # If we're already drawing, finish the line
@@ -268,7 +276,7 @@ class BezierEditingTool(QgsMapTool):
                         return
                     self.freehand_drawing = True
                     self.mouse_state = "drawing_freehand"
-                    self.freehand_rbl.reset(QgsWkbTypes.LineGeometry)
+                    self.freehand_rbl.reset(LineGeometry)
                     self.freehand_rbl.addPoint(point)
                 # Original drag mode behavior
                 else:
@@ -288,12 +296,12 @@ class BezierEditingTool(QgsMapTool):
                     else:
                         return
                     self.mouse_state = "draw_line"
-                    self.freehand_rbl.reset(QgsWkbTypes.LineGeometry)
+                    self.freehand_rbl.reset(LineGeometry)
                     self.freehand_rbl.addPoint(point)
         # split tool
         elif self.mode == "split":
             # right click
-            if event.button() == Qt.RightButton:
+            if event.button() == RightButton:
                 # if right click in editing, bezier editing finish
                 if self.editing:
                     self.finishEditing(layer)
@@ -303,11 +311,11 @@ class BezierEditingTool(QgsMapTool):
                     if ok:
                         self.editing = True
             # left click
-            elif event.button() == Qt.LeftButton:
+            elif event.button() == LeftButton:
                 # if click on bezier line, split bezier feature is created
                 if self.editing and self.editing_feature_id is not None:
                     type = layer.geometryType()
-                    if type == QgsWkbTypes.LineGeometry:
+                    if type == LineGeometry:
                         # split on anchor
                         if snapped[1]:
                             lineA, lineB = self.bg.split_line(
@@ -319,10 +327,10 @@ class BezierEditingTool(QgsMapTool):
                         else:
                             return
 
-                        if layer.wkbType() == QgsWkbTypes.LineString:
+                        if layer.wkbType() == WkbLineString:
                             geomA = QgsGeometry.fromPolylineXY(lineA)
                             geomB = QgsGeometry.fromPolylineXY(lineB)
-                        elif layer.wkbType() == QgsWkbTypes.MultiLineString:
+                        elif layer.wkbType() == WkbMultiLineString:
                             geomA = QgsGeometry.fromMultiPolylineXY([lineA])
                             geomB = QgsGeometry.fromMultiPolylineXY([lineB])
 
@@ -345,20 +353,20 @@ class BezierEditingTool(QgsMapTool):
         # unsplit tool
         elif self.mode == "unsplit":
             # if left click, feature selection
-            if event.button() == Qt.LeftButton:
+            if event.button() == LeftButton:
                 self.endPoint = self.startPoint = mouse_point
                 self.isEmittingPoint = True
                 self.showRect(self.startPoint, self.endPoint)
 
     def canvasMoveEvent(self, event):
         modifiers = QApplication.keyboardModifiers()
-        if bool(modifiers & Qt.ControlModifier):
+        if bool(modifiers & ControlModifier):
             self.smartGuideOn = True
         else:
             self.smartGuideOn = False
             #self.smartGuideOn = self.guideAction.isChecked()
         layer = self.canvas.currentLayer()
-        if not layer or layer.type() != QgsMapLayer.VectorLayer:
+        if not layer or layer.type() != VectorLayer:
             return
         mouse_point, snapped, snap_point, snap_idx = self.getSnapPoint(event)
         # bezier tool
@@ -366,8 +374,8 @@ class BezierEditingTool(QgsMapTool):
             # add anchor and dragging
             if self.mouse_state == "add_anchor":
                 self.canvas.setCursor(self.movehandle_cursor)
-                withAlt = bool(modifiers & Qt.AltModifier)
-                withShift = bool(modifiers & Qt.ShiftModifier)
+                withAlt = bool(modifiers & AltModifier)
+                withShift = bool(modifiers & ShiftModifier)
                 other_handle_idx, other_handle_point, anchor_point = self.bg.move_handle2(
                     self.clicked_idx, mouse_point, withAlt, withShift)
                 if withShift:
@@ -386,7 +394,7 @@ class BezierEditingTool(QgsMapTool):
             elif self.mouse_state == "move_handle":
                 self.canvas.setCursor(self.movehandle_cursor)
                 point = snap_point[0]
-                withAlt = bool(modifiers & Qt.AltModifier)
+                withAlt = bool(modifiers & AltModifier)
                 if withAlt:
                     self.bg.move_handle(self.clicked_idx, point, undo=False)
                     self.bm.move_handle(self.clicked_idx, point)
@@ -400,19 +408,19 @@ class BezierEditingTool(QgsMapTool):
                     self.bg.move_handle(self.clicked_idx, point, undo=False)
                     self.bm.move_handle(self.clicked_idx, point)
             # add handle
-            elif bool(modifiers & Qt.AltModifier) and snapped[1] and snapped[2]:
+            elif bool(modifiers & AltModifier) and snapped[1] and snapped[2]:
                 self.canvas.setCursor(self.addhandle_cursor)
             # insert anchor
-            elif bool(modifiers & Qt.AltModifier) and snapped[3] and not snapped[1]:
+            elif bool(modifiers & AltModifier) and snapped[3] and not snapped[1]:
                 self.canvas.setCursor(self.insertanchor_cursor)
             # force to add anchor
-            elif bool(modifiers & Qt.ControlModifier) and snapped[1]:
+            elif bool(modifiers & ControlModifier) and snapped[1]:
                 self.canvas.setCursor(self.insertanchor_cursor)
             # delete anchor
-            elif bool(modifiers & Qt.ShiftModifier) and snapped[1]:
+            elif bool(modifiers & ShiftModifier) and snapped[1]:
                 self.canvas.setCursor(self.deleteanchor_cursor)
             # delete handle
-            elif bool(modifiers & Qt.ShiftModifier) and snapped[2]:
+            elif bool(modifiers & ShiftModifier) and snapped[2]:
                 self.canvas.setCursor(self.deletehandle_cursor)
 
             # move anchor
@@ -422,7 +430,7 @@ class BezierEditingTool(QgsMapTool):
                     point = snap_point[1]
                 self.bg.move_anchor(self.clicked_idx, point, undo=False)
                 self.bm.move_anchor(self.clicked_idx, point)
-                if self.editing_geom_type == QgsWkbTypes.PolygonGeometry and self.clicked_idx == (self.bg.anchorCount() - 1):
+                if self.editing_geom_type == PolygonGeometry and self.clicked_idx == (self.bg.anchorCount() - 1):
                     self.bg.move_anchor(0, point, undo=False)
                     self.bm.move_anchor(0, point)
             # free moving
@@ -468,10 +476,10 @@ class BezierEditingTool(QgsMapTool):
     def canvasReleaseEvent(self, event):
         modifiers = QApplication.keyboardModifiers()
         layer = self.canvas.currentLayer()
-        if not layer or layer.type() != QgsMapLayer.VectorLayer:
+        if not layer or layer.type() != VectorLayer:
             return
         mouse_point, snapped, snap_point, _ = self.getSnapPoint(event)
-        if event.button() == Qt.LeftButton:
+        if event.button() == LeftButton:
             # bezier tool
             if self.mode == "bezier":
                 self.clicked_idx = None
@@ -502,9 +510,9 @@ class BezierEditingTool(QgsMapTool):
                     self.selectFeatures(mouse_point)
             if self.bm is not None:
                 self.bm.show_handle(self.show_handle)
-        elif event.button() == Qt.RightButton:
+        elif event.button() == RightButton:
             if self.mode == "bezier":
-                if bool(modifiers & Qt.ControlModifier):
+                if bool(modifiers & ControlModifier):
                     return
                 elif self.editing:
                     # if right click on first anchor in editing, flip bezier line
@@ -522,7 +530,7 @@ class BezierEditingTool(QgsMapTool):
             # freehand tool
             elif self.mode == "freehand":
                 # Ctrl+right click is handled in canvasPressEvent
-                if bool(modifiers & Qt.ControlModifier):
+                if bool(modifiers & ControlModifier):
                     return
                 # if right click in editing, bezier editing finish
                 elif self.editing:
@@ -569,9 +577,9 @@ class BezierEditingTool(QgsMapTool):
         # the layer geometry type is different
         elif result is False:
             reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr(
-                "Geometry type of the layer is different, or polygon isn't closed. Do you want to continue editing?"), QMessageBox.Yes,
-                QMessageBox.No)
-            if reply == QMessageBox.Yes:
+                "Geometry type of the layer is different, or polygon isn't closed. Do you want to continue editing?"), MsgBoxYes,
+                MsgBoxNo)
+            if reply == MsgBoxYes:
                 continueFlag = True
             else:
                 continueFlag = False
@@ -587,9 +595,9 @@ class BezierEditingTool(QgsMapTool):
                     reply = QMessageBox.question(None, self.tr("No feature"),
                                                  self.tr(
                                                      "No feature found. Do you want to continue editing?"),
-                                                 QMessageBox.Yes,
-                                                 QMessageBox.No)
-                    if reply == QMessageBox.Yes:
+                                                 MsgBoxYes,
+                                                 MsgBoxNo)
+                    if reply == MsgBoxYes:
                         continueFlag = True
                     else:
                         continueFlag = False
@@ -643,23 +651,23 @@ class BezierEditingTool(QgsMapTool):
             "/mActionDigitizeWithCurve.svg")), self.tr("Curve"))
         msgbox_convert = QMessageBox()
         msgbox_convert.setWindowTitle(self.tr("Convert to Bezier"))
-        msgbox_convert.setIcon(QMessageBox.Question)
+        msgbox_convert.setIcon(MsgBoxQuestion)
         msgbox_convert.setText(self.tr(
             "The feature isn't created by Bezier Tool or ver 1.3 higher.\n\n" +
             "Do you want to convert to Bezier?\n\n" +
             "Conversion can be done either to line segments or to fitting curve.\nPlease select conversion mode."))
-        msgbox_convert.addButton(button_line, QMessageBox.ApplyRole)
-        msgbox_convert.addButton(button_curve, QMessageBox.ApplyRole)
-        msgbox_button_cancel = msgbox_convert.addButton(QMessageBox.Cancel)
+        msgbox_convert.addButton(button_line, MsgBoxApplyRole)
+        msgbox_convert.addButton(button_curve, MsgBoxApplyRole)
+        msgbox_button_cancel = msgbox_convert.addButton(MsgBoxCancel)
 
-        if geom.type() == QgsWkbTypes.PointGeometry:
+        if geom.type() == PointGeometry:
             point = geom.asPoint()
             self.bg = BezierGeometry.convertPointToBezier(
                 self.projectCRS, point)
             self.bm = BezierMarker(self.canvas, self.bg)
             self.bm.add_anchor(0, point)
             geom_type = geom.type()
-        elif geom.type() == QgsWkbTypes.LineGeometry:
+        elif geom.type() == LineGeometry:
             geom.convertToSingleType()
             polyline = geom.asPolyline()
             is_bezier = BezierGeometry.checkIsBezier(self.projectCRS, polyline)
@@ -682,7 +690,7 @@ class BezierEditingTool(QgsMapTool):
                     self.bm.show(self.show_handle)
                     geom_type = geom.type()
 
-        elif geom.type() == QgsWkbTypes.PolygonGeometry:
+        elif geom.type() == PolygonGeometry:
             geom.convertToSingleType()
             polygon = geom.asPolygon()
             is_bezier = BezierGeometry.checkIsBezier(
@@ -777,31 +785,31 @@ class BezierEditingTool(QgsMapTool):
         else:
             if not editmode:
                 dlg = QgsAttributeDialog(layer, newFeature, True)
-                dlg.setAttribute(Qt.WA_DeleteOnClose)
-                dlg.setMode(QgsAttributeEditorContext.AddFeatureMode)
+                dlg.setAttribute(WA_DeleteOnClose)
+                dlg.setMode(AddFeatureMode)
                 dlg.setEditCommandMessage(self.tr("Bezier added"))
                 dlg.attributeForm().featureSaved.connect(
                     lambda f, form=dlg.attributeForm(): self.onFeatureSaved(f, form))
-                ok = dlg.exec_()
+                ok = dlg.exec()
                 if not ok:
                     reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr("Do you want to continue editing?"),
-                                                 QMessageBox.Yes,
-                                                 QMessageBox.No)
-                    if reply == QMessageBox.Yes:
+                                                 MsgBoxYes,
+                                                 MsgBoxNo)
+                    if reply == MsgBoxYes:
                         continueFlag = True
             else:
                 layer.beginEditCommand("Bezier edited")
                 dlg = self.iface.getFeatureForm(layer, feature)
-                ok = dlg.exec_()
+                ok = dlg.exec()
                 if ok:
                     layer.changeGeometry(feature.id(), geom)
                     layer.endEditCommand()
                 else:
                     layer.destroyEditCommand()
                     reply = QMessageBox.question(None, self.tr("Continue editing?"), self.tr("Do you want to continue editing?"),
-                                                 QMessageBox.Yes,
-                                                 QMessageBox.No)
-                    if reply == QMessageBox.Yes:
+                                                 MsgBoxYes,
+                                                 MsgBoxNo)
+                    if reply == MsgBoxYes:
                         continueFlag = True
 
         return newFeature, continueFlag
@@ -861,7 +869,7 @@ class BezierEditingTool(QgsMapTool):
         menu.addAction(streamingAction)
         
         # Show menu at cursor position
-        menu.exec_(self.canvas.mapToGlobal(event.pos()))
+        menu.exec(self.canvas.mapToGlobal(event.pos()))
     
     def toggleFreehandStreaming(self):
         """
@@ -887,7 +895,7 @@ class BezierEditingTool(QgsMapTool):
         snap_point = [None, None, None, None, None, None]
 
         self.snap_mark.hide()
-        self.guide_rbl.reset(QgsWkbTypes.LineGeometry)
+        self.guide_rbl.reset(LineGeometry)
         if self.guideLabelGroup is not None:
             self.canvas.scene().removeItem(self.guideLabelGroup)
             self.guideLabelGroup = None
@@ -1166,7 +1174,7 @@ class BezierEditingTool(QgsMapTool):
         # layers = QgsMapLayerRegistry.instance().mapLayers().values()
         layers = QgsProject.instance().layerTreeRoot().findLayers()
         for layer in layers:
-            if layer.layer().type() != QgsMapLayer.VectorLayer:
+            if layer.layer().type() != VectorLayer:
                 continue
             near = self.selectNearFeature(layer.layer(), point, rect)
             if near and rect is None:
@@ -1175,7 +1183,7 @@ class BezierEditingTool(QgsMapTool):
                 layer.layer().removeSelection()
 
     def showRect(self, startPoint, endPoint):
-        self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
+        self.rubberBand.reset(PolygonGeometry)
         if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
             return
 
@@ -1223,7 +1231,7 @@ class BezierEditingTool(QgsMapTool):
     def resetUnsplit(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
-        self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
+        self.rubberBand.reset(PolygonGeometry)
 
     def distance(self, p1, p2):
         dx = p1[0] - p2[0]
@@ -1236,7 +1244,7 @@ class BezierEditingTool(QgsMapTool):
         """
         layer = self.canvas.currentLayer()
         fields = layer.fields()
-        if layer.geometryType() == QgsWkbTypes.LineGeometry:
+        if layer.geometryType() == LineGeometry:
             selected_features = layer.selectedFeatures()
             if len(selected_features) == 2:
                 f0 = selected_features[0]
@@ -1272,9 +1280,9 @@ class BezierEditingTool(QgsMapTool):
                     interporate_line = b.asPolyline()
                     line = line0 + interporate_line[1:] + line1[1:]
 
-                if layer.wkbType() == QgsWkbTypes.LineString:
+                if layer.wkbType() == WkbLineString:
                     geom = QgsGeometry.fromPolylineXY(line)
-                elif layer.wkbType() == QgsWkbTypes.MultiLineString:
+                elif layer.wkbType() == WkbMultiLineString:
                     geom = QgsGeometry.fromMultiPolylineXY([line])
 
                 layer.beginEditCommand(self.tr("Bezier unsplit"))
@@ -1292,7 +1300,7 @@ class BezierEditingTool(QgsMapTool):
                     layer.endEditCommand()
                 else:
                     dlg = self.iface.getFeatureForm(layer, f0)
-                    if dlg.exec_():
+                    if dlg.exec():
                         layer.changeGeometry(f0.id(), geom)
                         layer.deleteFeature(f1.id())
                         layer.endEditCommand()
@@ -1332,4 +1340,4 @@ class BezierEditingTool(QgsMapTool):
         pass
 
     def log(self, msg):
-        QgsMessageLog.logMessage(msg, 'BezierEditing', Qgis.Info)
+        QgsMessageLog.logMessage(msg, 'BezierEditing', MessageInfo)

@@ -18,6 +18,7 @@
 from qgis.PyQt.QtGui import *
 from qgis.core import *
 from qgis.gui import *
+from .compat import LineGeometry, IconBox
 
 
 class BezierMarker:
@@ -30,7 +31,7 @@ class BezierMarker:
         self.handle_rbls = []  # handle line list
 
         # bezier curve line
-        self.bezier_rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.bezier_rbl = QgsRubberBand(self.canvas, LineGeometry)
         self.bezier_rbl.setColor(QColor(255, 0, 0, 150))
         self.bezier_rbl.setWidth(2)
 
@@ -44,7 +45,7 @@ class BezierMarker:
         self.anchor_marks = []
         self.handle_marks = []
         self.handle_rbls = []
-        self.bezier_rbl.reset(QgsWkbTypes.LineGeometry)
+        self.bezier_rbl.reset(LineGeometry)
 
     def show(self, show_handle=None):
         """
@@ -123,7 +124,7 @@ class BezierMarker:
         self.canvas.refresh()
 
     def _setBezierLine(self, points, rbl):
-        rbl.reset(QgsWkbTypes.LineGeometry)
+        rbl.reset(LineGeometry)
         for point in points:
             update = point is points[-1]
             rbl.addPoint(point, update)
@@ -131,7 +132,7 @@ class BezierMarker:
     def _setAnchorHandleMarker(self, markers, idx, point, color=QColor(0, 0, 0)):
         # insert anchor or handle marker
         marker = QgsVertexMarker(self.canvas)
-        marker.setIconType(QgsVertexMarker.ICON_BOX)
+        marker.setIconType(IconBox)
         marker.setColor(color)
         marker.setPenWidth(2)
         marker.setIconSize(5)
@@ -141,7 +142,7 @@ class BezierMarker:
         return markers
 
     def _setHandleLine(self, rbls, idx, point):
-        rbl = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        rbl = QgsRubberBand(self.canvas, LineGeometry)
         rbl.setColor(QColor(0, 0, 0))
         rbl.setWidth(1)
         rbl.addPoint(point)
